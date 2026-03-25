@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">NutriScan</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Asosiy</string>
+    <string name="nav_history">Tarix</string>
+    <string name="nav_settings">Sozlamalar</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">NutriScan</string>
+    <string name="home_subtitle">Mahsulot tarkibini tahlil qilish</string>
+    <string name="scan_label_button">Yorliqni skanerlash</string>
+    <string name="search_product_hint">Mahsulot nomi bo\'yicha qidirish</string>
+    <string name="recent_scans_title">So\'nggi skanerlashlar</string>
+    <string name="recent_scans_empty">Hali hech narsa yo\'q</string>
+    <string name="recent_scans_empty_subtitle">Birinchi mahsulotni skanerlab, uni shu yerda ko\'ring</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_title">Skanerlash</string>
+    <string name="camera_hint">Kamerani mahsulot yorlig\'iga qaratib</string>
+    <string name="camera_capture">Rasmga olish</string>
+    <string name="camera_cancel">Bekor qilish</string>
+    <string name="camera_permission_required">Skanerlash uchun kamera ruxsati kerak</string>
+    <string name="camera_grant_permission">Ruxsat berish</string>
+
+    <!-- Result Screen -->
+    <string name="result_title">Tahlil natijasi</string>
+    <string name="nutriscore_label">Nutri-Score</string>
+    <string name="ingredients_title">Tarkib</string>
+    <string name="ingredients_good">Foydali</string>
+    <string name="ingredients_bad">Zararli</string>
+    <string name="ingredients_neutral">Neytral</string>
+    <string name="explanation_title">Nima uchun?</string>
+    <string name="alternatives_title">Yaxshiroq alternativlar</string>
+    <string name="save_to_history">Tarixga saqlash</string>
+    <string name="share_result">Ulashish</string>
+    <string name="scan_again">Qayta skanerlash</string>
+
+    <!-- Nutri-Score Grades -->
+    <string name="nutriscore_a">Ajoyib tanlov! Bu mahsulotning ovqatlanish sifati juda yaxshi.</string>
+    <string name="nutriscore_b">Yaxshi ovqatlanish sifati. Bu mahsulot muvozanatli ovqatlanishning bir qismi bo\'lishi mumkin.</string>
+    <string name="nutriscore_c">O\'rtacha ovqatlanish sifati. O\'lchovda iste\'mol qiling.</string>
+    <string name="nutriscore_d">Past ovqatlanish sifati. Iste\'molni cheklang.</string>
+    <string name="nutriscore_e">Juda past ovqatlanish sifati. Doimiy iste\'moldan saqlaning.</string>
+
+    <!-- Common -->
+    <string name="back">Orqaga</string>
+    <string name="close">Yopish</string>
+    <string name="error_generic">Xatolik yuz berdi</string>
+    <string name="retry">Qayta urinish</string>
+</resources>

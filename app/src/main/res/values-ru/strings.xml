@@ -1,0 +1,51 @@
+<resources>
+    <string name="app_name">NutriScan</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Главная</string>
+    <string name="nav_history">История</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">NutriScan</string>
+    <string name="home_subtitle">Анализ состава продуктов</string>
+    <string name="scan_label_button">Сканировать этикетку</string>
+    <string name="search_product_hint">Поиск по названию продукта</string>
+    <string name="recent_scans_title">Последние сканирования</string>
+    <string name="recent_scans_empty">Пока ничего нет</string>
+    <string name="recent_scans_empty_subtitle">Отсканируйте первый продукт, чтобы увидеть его здесь</string>
+
+    <!-- Camera Screen -->
+    <string name="camera_title">Сканирование</string>
+    <string name="camera_hint">Наведите камеру на этикетку продукта</string>
+    <string name="camera_capture">Сфотографировать</string>
+    <string name="camera_cancel">Отмена</string>
+    <string name="camera_permission_required">Для сканирования необходимо разрешение на использование камеры</string>
+    <string name="camera_grant_permission">Разрешить доступ</string>
+
+    <!-- Result Screen -->
+    <string name="result_title">Результат анализа</string>
+    <string name="nutriscore_label">Nutri-Score</string>
+    <string name="ingredients_title">Состав</string>
+    <string name="ingredients_good">Полезно</string>
+    <string name="ingredients_bad">Вредно</string>
+    <string name="ingredients_neutral">Нейтрально</string>
+    <string name="explanation_title">Почему?</string>
+    <string name="alternatives_title">Лучшие альтернативы</string>
+    <string name="save_to_history">Сохранить в историю</string>
+    <string name="share_result">Поделиться</string>
+    <string name="scan_again">Сканировать снова</string>
+
+    <!-- Nutri-Score Grades -->
+    <string name="nutriscore_a">Отличный выбор! Этот продукт имеет очень хорошее качество питания.</string>
+    <string name="nutriscore_b">Хорошее качество питания. Этот продукт может быть частью сбалансированного рациона.</string>
+    <string name="nutriscore_c">Среднее качество питания. Употребляйте в умеренных количествах.</string>
+    <string name="nutriscore_d">Низкое качество питания. Ограничьте потребление.</string>
+    <string name="nutriscore_e">Очень низкое качество питания. Избегайте регулярного употребления.</string>
+
+    <!-- Common -->
+    <string name="back">Назад</string>
+    <string name="close">Закрыть</string>
+    <string name="error_generic">Что-то пошло не так</string>
+    <string name="retry">Повторить</string>
+</resources>
