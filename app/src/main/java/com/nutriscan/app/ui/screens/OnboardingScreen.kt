@@ -31,10 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.nutriscan.app.R
 import com.nutriscan.app.ui.theme.NutriScanTheme
 import com.nutriscan.app.ui.theme.card_stroke
 import com.nutriscan.app.ui.theme.muted_text
@@ -94,13 +96,13 @@ fun OnboardingScreen(
                                 )
                             }
                             Text(
-                                text = "Understand product safety fast",
+                                text = stringResource(R.string.onboarding_title),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
                             Text(
-                                text = "Scan barcodes, review ingredient risks, and get clear recommendations in seconds.",
+                                text = stringResource(R.string.onboarding_subtitle),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = muted_text,
                                 textAlign = TextAlign.Center,
@@ -110,7 +112,7 @@ fun OnboardingScreen(
                     }
 
                     Text(
-                        text = "NutriScan highlights allergens, harmful additives, and dietary conflicts so you can make faster food decisions with confidence.",
+                        text = stringResource(R.string.onboarding_body),
                         style = MaterialTheme.typography.bodyLarge,
                         color = muted_text
                     )
@@ -121,24 +123,24 @@ fun OnboardingScreen(
         item {
             FeatureCard(
                 icon = Icons.Default.Shield,
-                title = "Safety first",
-                body = "See SAFE, CAUTION, or DANGER at a glance based on your active modes and allergens."
+                title = stringResource(R.string.onboarding_feature_safety_title),
+                body = stringResource(R.string.onboarding_feature_safety_body)
             )
         }
 
         item {
             FeatureCard(
                 icon = Icons.Default.MedicalInformation,
-                title = "Plain-language guidance",
-                body = "Ingredient explanations and body impact notes are written for fast reading, not for nutrition experts only."
+                title = stringResource(R.string.onboarding_feature_guidance_title),
+                body = stringResource(R.string.onboarding_feature_guidance_body)
             )
         }
 
         item {
             FeatureCard(
                 icon = Icons.Default.QrCodeScanner,
-                title = "Reliable MVP flow",
-                body = "Barcode is the primary path. Manual search is available when the product cannot be found quickly."
+                title = stringResource(R.string.onboarding_feature_flow_title),
+                body = stringResource(R.string.onboarding_feature_flow_body)
             )
         }
 
@@ -152,7 +154,7 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "Start scanning",
+                    text = stringResource(R.string.onboarding_button_start),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )

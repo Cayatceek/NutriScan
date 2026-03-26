@@ -39,13 +39,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.nutriscan.app.R
 import com.nutriscan.app.domain.analyzer.Allergen
+import com.nutriscan.app.localization.localizedAllergenLabel
+import com.nutriscan.app.localization.localizedLanguageLabel
+import com.nutriscan.app.localization.localizedThemeLabel
 import com.nutriscan.app.ui.components.BottomNavigationBar
 import com.nutriscan.app.ui.components.SectionTitle
 import com.nutriscan.app.ui.theme.NutriScanTheme
@@ -69,16 +74,16 @@ fun SettingsScreen(
     if (uiState.showClearHistoryDialog) {
         AlertDialog(
             onDismissRequest = viewModel::dismissClearHistoryDialog,
-            title = { Text("Clear history") },
-            text = { Text("Remove all scanned products from your device history?") },
+            title = { Text(stringResource(R.string.settings_clear_history_title)) },
+            text = { Text(stringResource(R.string.settings_clear_history_message)) },
             confirmButton = {
                 TextButton(onClick = viewModel::clearHistory) {
-                    Text("Clear")
+                    Text(stringResource(R.string.clear))
                 }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissClearHistoryDialog) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -127,8 +132,8 @@ private fun SettingsContent(
     ) {
         item {
             SectionTitle(
-                title = "Settings",
-                subtitle = "Adjust preferences, dietary modes, and device-level product behavior."
+                title = stringResource(R.string.settings_title),
+                subtitle = stringResource(R.string.settings_subtitle)
             )
         }
 
@@ -144,12 +149,12 @@ private fun SettingsContent(
                     Spacer(modifier = Modifier.size(12.dp))
                     Column {
                         Text(
-                            text = "Account",
+                            text = stringResource(R.string.settings_account_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Guest mode is active. Subscription and cloud sync can be added later without changing this MVP flow.",
+                            text = stringResource(R.string.settings_account_body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = muted_text
                         )
@@ -158,29 +163,29 @@ private fun SettingsContent(
             }
         }
 
-        item { SectionTitle(title = "Dietary modes") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_dietary)) }
 
         item {
             SettingsCard {
                 Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     SettingsToggleRow(
                         icon = Icons.Default.Shield,
-                        title = "Halal mode",
-                        subtitle = "Elevate halal conflicts in the analysis summary.",
+                        title = stringResource(R.string.settings_halal_mode_title),
+                        subtitle = stringResource(R.string.settings_halal_mode_body),
                         checked = uiState.halalModeEnabled,
                         onCheckedChange = onSetHalalMode
                     )
                     SettingsToggleRow(
                         icon = Icons.Default.Tune,
-                        title = "Healthy mode",
-                        subtitle = "Highlight high-sugar and additive-heavy products more clearly.",
+                        title = stringResource(R.string.settings_healthy_mode_title),
+                        subtitle = stringResource(R.string.settings_healthy_mode_body),
                         checked = uiState.healthyModeEnabled,
                         onCheckedChange = onSetHealthyMode
                     )
                     SettingsToggleRow(
                         icon = Icons.Default.Star,
-                        title = "Vegan mode",
-                        subtitle = "Reserve space for plant-based conflicts in future analysis updates.",
+                        title = stringResource(R.string.settings_vegan_mode_title),
+                        subtitle = stringResource(R.string.settings_vegan_mode_body),
                         checked = uiState.veganModeEnabled,
                         onCheckedChange = onSetVeganMode
                     )
@@ -188,7 +193,7 @@ private fun SettingsContent(
             }
         }
 
-        item { SectionTitle(title = "Allergens") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_allergens)) }
 
         item {
             SettingsCard {
@@ -201,10 +206,7 @@ private fun SettingsContent(
                             selected = uiState.selectedAllergens.contains(allergen),
                             onClick = { onToggleAllergen(allergen) },
                             label = {
-                                Text(
-                                    allergen.name.replace("_", " ").lowercase()
-                                        .replaceFirstChar { it.uppercase() }
-                                )
+                                Text(localizedAllergenLabel(allergen))
                             }
                         )
                     }
@@ -212,57 +214,56 @@ private fun SettingsContent(
             }
         }
 
-        item { SectionTitle(title = "Language") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_language)) }
 
         item {
             SettingsChoiceCard(
                 icon = Icons.Default.Language,
-                title = "App language",
+                title = stringResource(R.string.settings_language_title),
                 selectedValue = uiState.selectedLanguage,
                 options = listOf(
-                    "system" to "System",
-                    "en" to "English",
-                    "ru" to "Russian",
-                    "uz" to "Uzbek"
+                    "uz" to localizedLanguageLabel("uz"),
+                    "ru" to localizedLanguageLabel("ru"),
+                    "en" to localizedLanguageLabel("en")
                 ),
                 onSelected = onSetLanguage
             )
         }
 
-        item { SectionTitle(title = "Appearance") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_appearance)) }
 
         item {
             SettingsChoiceCard(
                 icon = Icons.Default.Info,
-                title = "Theme",
+                title = stringResource(R.string.settings_theme_title),
                 selectedValue = uiState.selectedTheme,
                 options = listOf(
-                    "system" to "System",
-                    "light" to "Light",
-                    "dark" to "Dark"
+                    "system" to localizedThemeLabel("system"),
+                    "light" to localizedThemeLabel("light"),
+                    "dark" to localizedThemeLabel("dark")
                 ),
                 onSelected = onSetTheme
             )
         }
 
-        item { SectionTitle(title = "FAQ") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_faq)) }
 
         item {
             SettingsCard {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     FaqItem(
-                        question = "How does scanning work?",
-                        answer = "Barcode is the primary path. When a product is missing, NutriScan keeps the response honest and offers manual search or photo fallback entry."
+                        question = stringResource(R.string.settings_faq_scan_question),
+                        answer = stringResource(R.string.settings_faq_scan_answer)
                     )
                     FaqItem(
-                        question = "What do SAFE, CAUTION, and DANGER mean?",
-                        answer = "They summarize how the detected ingredients interact with your active allergens and dietary modes."
+                        question = stringResource(R.string.settings_faq_status_question),
+                        answer = stringResource(R.string.settings_faq_status_answer)
                     )
                 }
             }
         }
 
-        item { SectionTitle(title = "Policy") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_policy)) }
 
         item {
             SettingsCard {
@@ -275,7 +276,7 @@ private fun SettingsContent(
                     )
                     Spacer(modifier = Modifier.size(12.dp))
                     Text(
-                        text = "NutriScan provides educational product guidance only and does not replace professional medical advice.",
+                        text = stringResource(R.string.settings_policy_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = muted_text
                     )
@@ -283,7 +284,7 @@ private fun SettingsContent(
             }
         }
 
-        item { SectionTitle(title = "About") }
+        item { SectionTitle(title = stringResource(R.string.settings_section_about)) }
 
         item {
             SettingsCard {
@@ -294,22 +295,22 @@ private fun SettingsContent(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Version $appVersion",
+                        text = stringResource(R.string.settings_about_version, appVersion),
                         style = MaterialTheme.typography.bodyMedium,
                         color = muted_text
                     )
                     Text(
-                        text = "A health-tech assistant for faster, clearer food safety decisions.",
+                        text = stringResource(R.string.settings_about_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = muted_text
                     )
                     Text(
-                        text = "${uiState.historyCount} scanned items stored on this device",
+                        text = stringResource(R.string.settings_about_history_count, uiState.historyCount),
                         style = MaterialTheme.typography.bodySmall,
                         color = muted_text
                     )
                     Text(
-                        text = "Clear history",
+                        text = stringResource(R.string.settings_clear_history_action),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.clickable(onClick = onClearHistory)

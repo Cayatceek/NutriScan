@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.nutriscan.app.localization.LocaleManager
 import com.nutriscan.app.data.local.SettingsDataStore
 import com.nutriscan.app.ui.theme.LanguageManager
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,7 +31,7 @@ sealed class AuthState {
 }
 
 data class OnboardingUiState(
-    val selectedLanguage: String = "system",
+    val selectedLanguage: String = "uz",
     val isLanguageSelected: Boolean = false,
     val hasCompletedOnboarding: Boolean = false,
     val isLoggedIn: Boolean = false,
@@ -61,11 +62,13 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     private suspend fun checkOnboardingStatus() {
         val hasCompleted = settingsDataStore.hasCompletedOnboarding.first()
         val savedLanguage = settingsDataStore.language.first()
+        val hasManualLanguageSelection = settingsDataStore.isLanguageManuallySelected.first()
         val currentUser = auth?.currentUser
+        val resolvedLanguage = LocaleManager.resolveStartupLanguage(savedLanguage, hasManualLanguageSelection)
 
         _uiState.value = _uiState.value.copy(
-            selectedLanguage = savedLanguage,
-            isLanguageSelected = savedLanguage != "system",
+            selectedLanguage = resolvedLanguage.code,
+            isLanguageSelected = hasManualLanguageSelection,
             hasCompletedOnboarding = hasCompleted,
             isLoggedIn = currentUser != null
         )
@@ -86,7 +89,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     fun selectLanguage(language: String) {
         viewModelScope.launch {
             settingsDataStore.setLanguage(language)
-            LanguageManager.applyLanguage(getApplication(), language)
+            LocaleManager.applyLanguage(getApplication(), language)
 
             _uiState.value = _uiState.value.copy(
                 selectedLanguage = language,

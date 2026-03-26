@@ -1,0 +1,10 @@
+<resources>
+    <string name="scanner_camera_permission_action">Kameraga ruxsat berish</string>
+    <string name="scanner_camera_permission_denied_title">Kamera ruxsati kerak</string>
+    <string name="scanner_camera_permission_denied_message">Jonli barcode skanerlash uchun kamera ruxsatini yoqing. Hozircha kodni qo‘lda kiritishingiz mumkin.</string>
+    <string name="scanner_camera_error_title">Kamera ishga tushmadi</string>
+    <string name="scanner_camera_unavailable">Barcode skaneri hozir ishga tushmadi. Qayta urinib ko‘ring yoki kodni qo‘lda kiriting.</string>
+    <string name="scanner_live_hint">Skaner faol. Barcode-ni ramka ichida ushlab turing.</string>
+    <string name="scanner_overlay_hint">Barcode-ni ramka ichiga joylang</string>
+    <string name="scanner_button_enter_barcode">Barcode-ni qo‘lda kiriting</string>
+</resources>

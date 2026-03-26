@@ -240,7 +240,7 @@ private fun AuthOptions(
             ) {
                 // Google Icon (using text as placeholder)
                 Text(
-                    text = "G",
+                    text = stringResource(R.string.auth_google_initial),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4285F4)
@@ -259,7 +259,7 @@ private fun AuthOptions(
         ) {
             Divider(modifier = Modifier.weight(1f))
             Text(
-                text = "OR",
+                text = stringResource(R.string.auth_or),
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

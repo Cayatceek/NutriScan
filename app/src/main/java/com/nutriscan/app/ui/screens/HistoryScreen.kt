@@ -19,11 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -35,12 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.nutriscan.app.R
+import com.nutriscan.app.localization.localizedStatusLabel
 import com.nutriscan.app.data.local.SettingsDataStore
 import com.nutriscan.app.data.local.entity.ProductEntity
 import com.nutriscan.app.data.local.entity.ScanHistoryWithProduct
@@ -49,11 +51,13 @@ import com.nutriscan.app.domain.analysis.AnalysisSettings
 import com.nutriscan.app.domain.analyzer.Allergen
 import com.nutriscan.app.model.SafetyStatus
 import com.nutriscan.app.ui.components.BottomNavigationBar
+import com.nutriscan.app.ui.components.EmptyStateCard
 import com.nutriscan.app.ui.components.ErrorState
 import com.nutriscan.app.ui.components.LoadingState
 import com.nutriscan.app.ui.components.SectionTitle
 import com.nutriscan.app.ui.components.statusColors
 import com.nutriscan.app.ui.theme.NutriScanTheme
+import com.nutriscan.app.ui.theme.UiTokens
 import com.nutriscan.app.ui.theme.card_stroke
 import com.nutriscan.app.ui.theme.muted_text
 import com.nutriscan.app.viewmodel.HistoryFilter
@@ -84,74 +88,74 @@ fun HistoryScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            BottomNavigationBar(navController = navController)
-        }
+        bottomBar = { BottomNavigationBar(navController = navController) }
     ) { paddingValues ->
         when {
             uiState.isLoading -> {
                 LoadingState(
-                    title = "Loading history",
-                    message = "Preparing your most recent product checks.",
+                    title = stringResource(R.string.history_loading_title),
+                    message = stringResource(R.string.history_loading_message),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 )
             }
+
             uiState.error != null -> {
                 ErrorState(
-                    title = "History unavailable",
-                    message = uiState.error ?: "We could not load your saved scans.",
+                    title = stringResource(R.string.history_error_title),
+                    message = uiState.error ?: stringResource(R.string.history_error_message),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 )
             }
+
             else -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 16.dp, vertical = 20.dp)
+                        .padding(horizontal = UiTokens.SpaceM, vertical = UiTokens.SpaceL)
                 ) {
                     SectionTitle(
-                        title = "History",
-                        subtitle = "Review scanned products and filter quickly by favorites."
+                        title = stringResource(R.string.history_title),
+                        subtitle = stringResource(R.string.history_subtitle)
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(UiTokens.SpaceM))
 
                     OutlinedTextField(
                         value = uiState.searchQuery,
                         onValueChange = viewModel::searchHistory,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        placeholder = { Text("Search scans") },
+                        shape = RoundedCornerShape(UiTokens.Radius),
+                        placeholder = { Text(stringResource(R.string.history_search_placeholder)) },
                         singleLine = true
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(UiTokens.SpaceS))
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceXS)) {
                         FilterChip(
                             selected = uiState.selectedFilter == HistoryFilter.ALL,
                             onClick = { viewModel.setFilter(HistoryFilter.ALL) },
-                            label = { Text("All") }
+                            label = { Text(stringResource(R.string.history_filter_all)) }
                         )
                         FilterChip(
                             selected = uiState.selectedFilter == HistoryFilter.FAVORITES,
                             onClick = { viewModel.setFilter(HistoryFilter.FAVORITES) },
-                            label = { Text("Favorites") }
+                            label = { Text(stringResource(R.string.history_filter_favorites)) }
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(UiTokens.SpaceM))
 
                     if (filteredHistory.isEmpty()) {
                         EmptyHistoryState()
                     } else {
                         LazyColumn(
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            contentPadding = PaddingValues(bottom = UiTokens.SpaceM),
+                            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
                         ) {
                             items(filteredHistory, key = { it.scanHistory.id }) { item ->
                                 val status = historyStatus(
@@ -179,34 +183,11 @@ private fun EmptyHistoryState() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, card_stroke)
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "No scans yet",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Scanned products will appear here once you start using NutriScan.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = muted_text
-                )
-            }
-        }
+        EmptyStateCard(
+            title = stringResource(R.string.history_empty_title),
+            message = stringResource(R.string.history_empty_message),
+            icon = Icons.Outlined.History
+        )
     }
 }
 
@@ -221,34 +202,35 @@ private fun HistoryRecordCard(
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(UiTokens.LargeRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, card_stroke)
+        border = BorderStroke(1.dp, card_stroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(UiTokens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceXS)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .size(UiTokens.SpaceS)
                         .background(contentColor, CircleShape)
                 )
                 Text(
-                    text = status.name,
+                    text = localizedStatusLabel(status),
                     style = MaterialTheme.typography.labelLarge,
                     color = contentColor,
                     fontWeight = FontWeight.Bold
                 )
                 if (item.product.isFavorite) {
                     Text(
-                        text = "Favorite",
+                        text = stringResource(R.string.history_badge_favorite),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -265,29 +247,29 @@ private fun HistoryRecordCard(
                 color = muted_text
             )
             Text(
-                text = "Scanned $date",
+                text = stringResource(R.string.history_scanned_at, date),
                 style = MaterialTheme.typography.bodySmall,
                 color = muted_text
             )
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(UiTokens.Radius),
                 colors = CardDefaults.cardColors(containerColor = containerColor)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .padding(UiTokens.SpaceS),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Latest safety status",
+                        text = stringResource(R.string.history_latest_verdict),
                         style = MaterialTheme.typography.bodySmall,
                         color = contentColor,
                         modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(UiTokens.SpaceXS))
                     Text(
-                        text = status.name,
+                        text = localizedStatusLabel(status),
                         style = MaterialTheme.typography.labelLarge,
                         color = contentColor,
                         fontWeight = FontWeight.Bold

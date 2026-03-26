@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.nutriscan.app.data.local.SettingsDataStore
+import com.nutriscan.app.localization.LocaleManager
 import com.nutriscan.app.navigation.Screen
 import com.nutriscan.app.ui.screens.CameraScreen
 import com.nutriscan.app.ui.screens.FirstAidScreen
@@ -29,7 +31,6 @@ import com.nutriscan.app.ui.screens.NotFoundScreen
 import com.nutriscan.app.ui.screens.OnboardingScreen
 import com.nutriscan.app.ui.screens.ResultScreen
 import com.nutriscan.app.ui.screens.SettingsScreen
-import com.nutriscan.app.ui.theme.LanguageManager
 import com.nutriscan.app.ui.theme.NutriScanTheme
 import com.nutriscan.app.ui.theme.ThemeManager
 import com.nutriscan.app.viewmodel.CameraViewModel
@@ -37,6 +38,7 @@ import com.nutriscan.app.viewmodel.ScannerPanel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -47,14 +49,21 @@ class MainActivity : ComponentActivity() {
 
         settingsDataStore = SettingsDataStore(this)
 
-        lifecycleScope.launch {
+        runBlocking {
             val savedTheme = settingsDataStore.theme.first()
             ThemeManager.applyTheme(savedTheme)
 
             val savedLanguage = settingsDataStore.language.first()
-            val currentLanguage = LanguageManager.getCurrentLanguage(this@MainActivity)
-            if (savedLanguage != currentLanguage) {
-                LanguageManager.applyLanguage(this@MainActivity, savedLanguage)
+            val hasManualLanguageSelection = settingsDataStore.isLanguageManuallySelected.first()
+            val resolvedLanguage = LocaleManager.resolveStartupLanguage(
+                savedLanguageCode = savedLanguage,
+                hasManualSelection = hasManualLanguageSelection
+            )
+
+            LocaleManager.applyLanguage(resolvedLanguage)
+
+            if (!hasManualLanguageSelection && savedLanguage != resolvedLanguage.code) {
+                settingsDataStore.setResolvedLanguage(resolvedLanguage.code)
             }
         }
 
@@ -77,7 +86,7 @@ class MainActivity : ComponentActivity() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Preparing NutriScan...",
+                            text = stringResource(R.string.app_preparing),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

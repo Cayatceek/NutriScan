@@ -1,0 +1,10 @@
+<resources>
+    <string name="scanner_camera_permission_action">Разрешить камеру</string>
+    <string name="scanner_camera_permission_denied_title">Нужен доступ к камере</string>
+    <string name="scanner_camera_permission_denied_message">Разрешите доступ к камере для живого сканирования штрихкода. Пока можно ввести код вручную.</string>
+    <string name="scanner_camera_error_title">Камера недоступна</string>
+    <string name="scanner_camera_unavailable">Сканер штрихкода сейчас не удалось запустить. Попробуйте снова или введите код вручную.</string>
+    <string name="scanner_live_hint">Живой сканер активен. Удерживайте штрихкод товара внутри рамки.</string>
+    <string name="scanner_overlay_hint">Поместите штрихкод внутрь рамки</string>
+    <string name="scanner_button_enter_barcode">Ввести штрихкод вручную</string>
+</resources>

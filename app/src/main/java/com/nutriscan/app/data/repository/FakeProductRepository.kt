@@ -70,6 +70,19 @@ class FakeProductRepository {
                 IngredientEntity("Sugar", IngredientType.BAD, "Raises overall sugar load")
             ),
             source = "fake"
+        ),
+        ProductEntity(
+            id = "478002200006",
+            barcode = "478002200006",
+            name = "Fruit Jelly Bites",
+            brand = "Sweet Cloud",
+            nutriscore = NutriScore.D,
+            ingredients = listOf(
+                IngredientEntity("Sugar", IngredientType.BAD, "Raises overall sugar load"),
+                IngredientEntity("Gelatin", IngredientType.BAD, "Can conflict with halal dietary preferences"),
+                IngredientEntity("E102", IngredientType.BAD, "Color additive some users prefer to avoid")
+            ),
+            source = "fake"
         )
     )
 

@@ -1,0 +1,5 @@
+<resources>
+    <string name="scanner_error_network">Unable to reach product service. Check your connection and try again.</string>
+    <string name="scanner_error_server">Product service is temporarily unavailable. Try again in a moment.</string>
+    <string name="result_meta_cached_source">Cached copy</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="scanner_error_network">Не удалось связаться с сервисом продуктов. Проверьте подключение и попробуйте снова.</string>
+    <string name="scanner_error_server">Сервис продуктов временно недоступен. Попробуйте ещё раз чуть позже.</string>
+    <string name="result_meta_cached_source">Кэшированная копия</string>
+</resources>

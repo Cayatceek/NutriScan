@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
 import com.nutriscan.app.data.local.SettingsDataStore
+import com.nutriscan.app.localization.LocaleManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -40,45 +41,10 @@ object ThemeManager {
 object LanguageManager {
 
     fun applyLanguage(context: Context, language: String) {
-        val localeList = when (language) {
-            "en" -> LocaleListCompat.forLanguageTags("en-US")
-            "ru" -> LocaleListCompat.forLanguageTags("ru-RU")
-            "uz" -> LocaleListCompat.forLanguageTags("uz-UZ")
-            else -> LocaleListCompat.getEmptyLocaleList() // System default
-        }
-        
-        // Apply locale using AppCompatDelegate
-        AppCompatDelegate.setApplicationLocales(localeList)
-        
-        // For older devices or if the above doesn't work immediately,
-        // we also update the configuration directly
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            updateResourcesLegacy(context, language)
-        }
-    }
-    
-    private fun updateResourcesLegacy(context: Context, language: String) {
-        if (language == "system") return
-        
-        val locale = java.util.Locale(language)
-        java.util.Locale.setDefault(locale)
-        
-        val resources = context.resources
-        val configuration = resources.configuration
-        configuration.setLocale(locale)
-        
-        @Suppress("DEPRECATION")
-        resources.updateConfiguration(configuration, resources.displayMetrics)
+        LocaleManager.applyLanguage(context, language)
     }
 
     fun getCurrentLanguage(context: Context): String {
-        val locales = AppCompatDelegate.getApplicationLocales()
-        return when {
-            locales.isEmpty -> "system"
-            locales[0]?.language == "uz" -> "uz"
-            locales[0]?.language == "ru" -> "ru"
-            locales[0]?.language?.startsWith("en") == true -> "en"
-            else -> "system"
-        }
+        return LocaleManager.currentAppLanguage(context).code
     }
 }

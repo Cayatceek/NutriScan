@@ -1,0 +1,5 @@
+<resources>
+    <string name="scanner_error_network">Mahsulot servisiga ulanib bo‘lmadi. Internetni tekshirib, qayta urinib ko‘ring.</string>
+    <string name="scanner_error_server">Mahsulot servisi vaqtincha ishlamayapti. Birozdan keyin yana urinib ko‘ring.</string>
+    <string name="result_meta_cached_source">Keshlangan nusxa</string>
+</resources>

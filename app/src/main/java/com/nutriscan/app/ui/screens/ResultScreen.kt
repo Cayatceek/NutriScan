@@ -2,6 +2,7 @@ package com.nutriscan.app.ui.screens
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,16 +13,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.IosShare
+import androidx.compose.material.icons.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.ReportProblem
+import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,11 +53,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nutriscan.app.R
+import com.nutriscan.app.localization.localizedAnalysisItem
+import com.nutriscan.app.localization.localizedNutriScoreNote
+import com.nutriscan.app.localization.localizedRecommendation
+import com.nutriscan.app.localization.localizedStatusLabel
+import com.nutriscan.app.localization.localizedStatusMessage
 import com.nutriscan.app.model.Ingredient
 import com.nutriscan.app.model.IngredientType
 import com.nutriscan.app.model.NutriScore
@@ -59,6 +74,7 @@ import com.nutriscan.app.model.ProductAnalysis
 import com.nutriscan.app.model.Recommendation
 import com.nutriscan.app.model.ScanResult
 import com.nutriscan.app.model.SafetyStatus
+import com.nutriscan.app.model.Warning
 import com.nutriscan.app.ui.components.ErrorState
 import com.nutriscan.app.ui.components.IngredientCard
 import com.nutriscan.app.ui.components.LoadingState
@@ -67,9 +83,14 @@ import com.nutriscan.app.ui.components.SectionTitle
 import com.nutriscan.app.ui.components.StatusBanner
 import com.nutriscan.app.ui.components.WarningCard
 import com.nutriscan.app.ui.components.WarningChip
+import com.nutriscan.app.ui.components.warningIconForTitle
 import com.nutriscan.app.ui.theme.NutriScanTheme
+import com.nutriscan.app.ui.theme.UiTokens
 import com.nutriscan.app.ui.theme.card_stroke
 import com.nutriscan.app.ui.theme.muted_text
+import com.nutriscan.app.ui.theme.status_caution
+import com.nutriscan.app.ui.theme.status_danger
+import com.nutriscan.app.ui.theme.status_safe
 import com.nutriscan.app.viewmodel.ResultViewModel
 import com.nutriscan.app.viewmodel.ResultViewModelFactory
 
@@ -95,11 +116,11 @@ fun ResultScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Product result") },
+                title = { Text(stringResource(R.string.result_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = null
                         )
                     }
@@ -108,11 +129,15 @@ fun ResultScreen(
                     IconButton(
                         onClick = {
                             viewModel.shareResult()?.let { intent ->
-                                startActivity(context, Intent.createChooser(intent, "Share via"), null)
+                                startActivity(
+                                    context,
+                                    Intent.createChooser(intent, context.getString(R.string.result_share_chooser)),
+                                    null
+                                )
                             }
                         }
                     ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                        Icon(imageVector = Icons.Outlined.IosShare, contentDescription = null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -124,28 +149,31 @@ fun ResultScreen(
         when {
             uiState.isLoading -> {
                 LoadingState(
-                    title = "Preparing analysis",
-                    message = "Checking safety signals and building the product summary.",
+                    title = stringResource(R.string.result_loading_title),
+                    message = stringResource(R.string.result_loading_message),
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 )
             }
+
             uiState.error != null -> {
                 ErrorState(
-                    title = "Result unavailable",
-                    message = uiState.error ?: "We could not load this product right now.",
-                    actionLabel = "Scan again",
-                    onAction = onScanAgain,
+                    title = stringResource(R.string.result_error_title),
+                    message = uiState.error ?: stringResource(R.string.result_error_default),
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = { viewModel.loadResult(productId) },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 )
             }
+
             uiState.scanResult != null -> {
                 ResultContent(
                     scanResult = uiState.scanResult!!,
                     productAnalysis = uiState.productAnalysis,
+                    isCachedResult = uiState.isCachedResult,
                     isFavorite = uiState.isFavorite,
                     isSaved = uiState.isSaved,
                     onFavoriteClick = viewModel::toggleFavorite,
@@ -161,29 +189,21 @@ fun ResultScreen(
 
     if (showAlternativesSheet && uiState.scanResult?.alternatives?.isNotEmpty() == true) {
         ModalBottomSheet(onDismissRequest = { showAlternativesSheet = false }) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = UiTokens.SpaceL),
+                verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
+            ) {
                 Text(
-                    text = "Alternatives",
+                    text = stringResource(R.string.result_alternatives_title),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-                Text(
-                    text = "Better options currently available in the local product catalog.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = muted_text,
-                    modifier = Modifier.padding(horizontal = 20.dp)
+                    fontWeight = FontWeight.Bold
                 )
                 uiState.scanResult?.alternatives?.forEach { alternative ->
-                    AlternativeCard(
-                        product = alternative,
-                        modifier = Modifier.padding(horizontal = 20.dp)
-                    )
+                    AlternativeCard(product = alternative)
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(UiTokens.SpaceS))
             }
         }
     }
@@ -193,6 +213,7 @@ fun ResultScreen(
 private fun ResultContent(
     scanResult: ScanResult,
     productAnalysis: ProductAnalysis?,
+    isCachedResult: Boolean,
     isFavorite: Boolean,
     isSaved: Boolean,
     onFavoriteClick: () -> Unit,
@@ -202,77 +223,61 @@ private fun ResultContent(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues()
 ) {
+    val analysis = productAnalysis
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(
-            start = 16.dp,
-            top = 20.dp + contentPadding.calculateTopPadding(),
-            end = 16.dp,
-            bottom = 28.dp + contentPadding.calculateBottomPadding()
+            start = UiTokens.SpaceM,
+            top = UiTokens.SpaceM + contentPadding.calculateTopPadding(),
+            end = UiTokens.SpaceM,
+            bottom = UiTokens.SpaceL + contentPadding.calculateBottomPadding()
         ),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceM)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Text(
-                        text = "Nutri-Score ${scanResult.product.nutriscore.grade}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-                Text(
-                    text = scanResult.product.name,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = scanResult.product.brand,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = muted_text
-                )
-            }
+            ProductHeaderCard(
+                scanResult = scanResult,
+                isCachedResult = isCachedResult
+            )
         }
 
-        productAnalysis?.let { analysis ->
+        analysis?.let { safeAnalysis ->
             item {
                 StatusBanner(
-                    status = analysis.safetyStatus,
-                    title = analysis.safetyStatus.name,
-                    supportingText = bannerDescription(analysis)
+                    status = safeAnalysis.safetyStatus,
+                    title = localizedStatusLabel(safeAnalysis.safetyStatus),
+                    supportingText = localizedStatusMessage(safeAnalysis.safetyStatus)
                 )
             }
 
             item {
-                ResultSignalCard(analysis = analysis)
+                SafetyHighlightsCard(analysis = safeAnalysis)
             }
 
             item {
                 SectionTitle(
-                    title = "How it affects your body",
-                    subtitle = "Short, readable context for the current product."
+                    title = stringResource(R.string.result_body_title),
+                    subtitle = stringResource(R.string.result_body_subtitle)
                 )
             }
 
             item {
                 BodyImpactCard(
-                    summary = analysis.explanation,
-                    nutritionNote = scanResult.explanation
+                    bullets = buildImpactBullets(
+                        context = context,
+                        analysis = safeAnalysis,
+                        nutriScore = scanResult.product.nutriscore
+                    )
                 )
             }
 
             item {
-                SectionTitle(title = "Recommendation")
-            }
-
-            item {
+                val (recommendationTitle, recommendationMessage) = localizedRecommendation(safeAnalysis.safetyStatus)
                 RecommendationBlock(
-                    title = analysis.recommendation.title,
-                    message = analysis.recommendation.message
+                    title = recommendationTitle,
+                    message = recommendationMessage
                 )
             }
         }
@@ -291,8 +296,8 @@ private fun ResultContent(
 
         item {
             SectionTitle(
-                title = "Ingredient explanation",
-                subtitle = "Each ingredient is labeled in plain language so you can scan the list quickly."
+                title = stringResource(R.string.result_ingredient_explanation_title),
+                subtitle = stringResource(R.string.result_ingredient_explanation_subtitle)
             )
         }
 
@@ -303,49 +308,114 @@ private fun ResultContent(
 }
 
 @Composable
-private fun ResultSignalCard(
-    analysis: ProductAnalysis
+private fun ProductHeaderCard(
+    scanResult: ScanResult,
+    isCachedResult: Boolean
 ) {
-    val dietaryWarnings = analysis.warnings.map { warning ->
-        "${warning.title}: ${warning.message}"
-    }
-
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, card_stroke),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceXS)
+            ) {
+                MetaPill(label = scanResult.product.brand)
+                MetaPill(label = stringResource(R.string.result_meta_nutriscore, scanResult.product.nutriscore.grade))
+                if (isCachedResult) {
+                    MetaPill(label = stringResource(R.string.result_meta_cached_source))
+                }
+            }
+            Text(
+                text = scanResult.product.name,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.result_header_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = muted_text
+            )
+        }
+    }
+}
+
+@Composable
+private fun MetaPill(label: String) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun SafetyHighlightsCard(
+    analysis: ProductAnalysis
+) {
+    val context = LocalContext.current
+    val allergenItems = analysis.detectedAllergens.map(context::localizedAnalysisItem)
+    val harmfulItems = analysis.harmfulIngredients.map(context::localizedAnalysisItem)
+    val dietaryWarnings = extractDietaryWarnings(analysis.warnings).map(context::localizedAnalysisItem)
+
+    Card(
+        shape = RoundedCornerShape(UiTokens.LargeRadius),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, card_stroke),
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
+    ) {
+        Column(
+            modifier = Modifier.padding(UiTokens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
         ) {
             Text(
-                text = "Warnings",
+                text = stringResource(R.string.result_warnings_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            if (analysis.detectedAllergens.isNotEmpty()) {
-                WarningCard(title = "Allergens", items = analysis.detectedAllergens)
-            }
+            WarningCard(
+                title = stringResource(R.string.result_warnings_allergens),
+                items = allergenItems,
+                icon = warningIconForTitle("allergens"),
+                tint = status_danger
+            )
 
-            if (analysis.harmfulIngredients.isNotEmpty()) {
-                WarningCard(title = "Harmful ingredients", items = analysis.harmfulIngredients)
-            }
+            WarningCard(
+                title = stringResource(R.string.result_warnings_additives),
+                items = harmfulItems,
+                icon = warningIconForTitle("additives"),
+                tint = status_caution
+            )
 
-            if (dietaryWarnings.isNotEmpty()) {
-                WarningCard(title = "Dietary conflicts", items = dietaryWarnings)
-            }
+            WarningCard(
+                title = stringResource(R.string.result_warnings_dietary),
+                items = dietaryWarnings,
+                icon = warningIconForTitle("dietary"),
+                tint = status_danger
+            )
 
             if (
                 analysis.detectedAllergens.isEmpty() &&
                 analysis.harmfulIngredients.isEmpty() &&
                 dietaryWarnings.isEmpty()
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WarningChip(label = "No active warnings")
-                }
+                WarningChip(
+                    label = stringResource(R.string.result_warnings_none),
+                    icon = Icons.Outlined.CheckCircle,
+                    tint = status_safe
+                )
             }
         }
     }
@@ -353,33 +423,36 @@ private fun ResultSignalCard(
 
 @Composable
 private fun BodyImpactCard(
-    summary: String,
-    nutritionNote: String
+    bullets: List<String>
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(UiTokens.LargeRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, card_stroke),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(UiTokens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
         ) {
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Text(
-                    text = nutritionNote,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = muted_text,
-                    modifier = Modifier.padding(14.dp)
-                )
+            bullets.forEach { bullet ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceXS),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .size(6.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    )
+                    Text(
+                        text = bullet,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -396,59 +469,87 @@ private fun ResultActionsCard(
     onScanAgain: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(UiTokens.LargeRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, card_stroke),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(UiTokens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
         ) {
             Text(
-                text = "Actions",
+                text = stringResource(R.string.result_actions_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)) {
                 OutlinedButton(
                     onClick = onFavoriteClick,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(UiTokens.ButtonHeight),
+                    shape = RoundedCornerShape(UiTokens.Radius)
                 ) {
                     Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        imageVector = Icons.Outlined.FavoriteBorder,
                         contentDescription = null
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Favorite")
+                    Spacer(modifier = Modifier.width(UiTokens.SpaceXS))
+                    Text(
+                        if (isFavorite) {
+                            stringResource(R.string.result_action_favorited)
+                        } else {
+                            stringResource(R.string.result_action_favorite)
+                        }
+                    )
                 }
                 Button(
                     onClick = onSaveClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(UiTokens.ButtonHeight),
                     enabled = !isSaved,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(UiTokens.Radius)
                 ) {
-                    Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (isSaved) "Saved" else "Save")
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(UiTokens.SpaceXS))
+                    Text(
+                        if (isSaved) {
+                            stringResource(R.string.result_action_saved)
+                        } else {
+                            stringResource(R.string.result_action_save)
+                        }
+                    )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)) {
                 OutlinedButton(
                     onClick = onAlternativesClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(UiTokens.ButtonHeight),
                     enabled = hasAlternatives,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(UiTokens.Radius)
                 ) {
-                    Text("Alternatives")
+                    Text(stringResource(R.string.result_action_alternatives))
                 }
                 Button(
                     onClick = onScanAgain,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(UiTokens.ButtonHeight),
+                    shape = RoundedCornerShape(UiTokens.Radius)
                 ) {
-                    Text("Scan again")
+                    Icon(
+                        imageVector = Icons.Outlined.RestartAlt,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(UiTokens.SpaceXS))
+                    Text(stringResource(R.string.result_action_scan_again))
                 }
             }
         }
@@ -457,47 +558,100 @@ private fun ResultActionsCard(
 
 @Composable
 private fun AlternativeCard(
-    product: Product,
-    modifier: Modifier = Modifier
+    product: Product
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(UiTokens.LargeRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, card_stroke),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationLow)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(UiTokens.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)
         ) {
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = product.brand,
-                style = MaterialTheme.typography.bodyMedium,
-                color = muted_text
-            )
-            Text(
-                text = "Nutri-Score ${product.nutriscore.grade}",
-                style = MaterialTheme.typography.bodySmall,
-                color = muted_text
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = product.nutriscore.grade,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = product.brand,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = muted_text,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Icon(
+                imageVector = Icons.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-private fun bannerDescription(analysis: ProductAnalysis): String {
-    return when (analysis.safetyStatus) {
-        SafetyStatus.SAFE -> "No major safety conflicts were found for your current settings."
-        SafetyStatus.CAUTION -> "Some ingredients need a closer look before regular consumption."
-        SafetyStatus.DANGER -> "This product conflicts with active allergens or dietary safety rules."
+private fun buildImpactBullets(
+    context: android.content.Context,
+    analysis: ProductAnalysis,
+    nutriScore: NutriScore
+): List<String> {
+    val bullets = mutableListOf<String>()
+    val allergenItems = analysis.detectedAllergens.map(context::localizedAnalysisItem).distinct()
+    val harmfulItems = analysis.harmfulIngredients.map(context::localizedAnalysisItem).distinct()
+    val dietaryItems = extractDietaryWarnings(analysis.warnings).map(context::localizedAnalysisItem).distinct()
+
+    if (allergenItems.isNotEmpty()) {
+        bullets += context.getString(R.string.result_body_allergens, allergenItems.joinToString(", "))
     }
+    if (harmfulItems.isNotEmpty()) {
+        bullets += context.getString(R.string.result_body_harmful, harmfulItems.joinToString(", "))
+    }
+    if (dietaryItems.isNotEmpty()) {
+        bullets += context.getString(R.string.result_body_dietary, dietaryItems.joinToString(", "))
+    }
+    bullets += context.localizedNutriScoreNote(nutriScore)
+
+    return bullets
+        .filter { it.isNotBlank() }
+        .distinct()
+        .ifEmpty { listOf(context.getString(R.string.result_body_no_major)) }
+        .take(4)
+}
+
+private fun extractDietaryWarnings(warnings: List<Warning>): List<String> {
+    return warnings
+        .flatMap { warning ->
+            warning.message
+                .substringAfter(':', warning.message)
+                .split(",")
+        }
+        .map { it.trim().trimEnd('.') }
+        .filter { it.isNotBlank() }
 }
 
 @Preview(showBackground = true)
@@ -533,17 +687,18 @@ private fun ResultScreenPreview() {
                 detectedAllergens = listOf("Dairy"),
                 harmfulIngredients = listOf("High sugar"),
                 warnings = listOf(
-                    com.nutriscan.app.model.Warning(
+                    Warning(
                         title = "Halal",
-                        message = "Check dairy processing source if halal mode matters for you."
+                        message = "Contains gelatin"
                     )
                 ),
-                explanation = "This product matches your selected allergens and contains high sugar.",
+                explanation = "This product matches your selected allergens. Multiple risk signals are present.",
                 recommendation = Recommendation(
                     title = "Avoid this product",
                     message = "Choose a lower sugar option without dairy ingredients."
                 )
             ),
+            isCachedResult = false,
             isFavorite = false,
             isSaved = false,
             onFavoriteClick = {},

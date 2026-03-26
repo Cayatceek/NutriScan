@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.nutriscan.app.domain.analyzer.Allergen
+import com.nutriscan.app.localization.AppLanguage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -17,6 +18,7 @@ class SettingsDataStore(private val context: Context) {
 
     companion object {
         val LANGUAGE_KEY = stringPreferencesKey("language")
+        val MANUAL_LANGUAGE_KEY = booleanPreferencesKey("manual_language")
         val THEME_KEY = stringPreferencesKey("theme")
         val HALAL_MODE_KEY = booleanPreferencesKey("halal_mode")
         val HEALTHY_MODE_KEY = booleanPreferencesKey("healthy_mode")
@@ -30,12 +32,24 @@ class SettingsDataStore(private val context: Context) {
 
     // Language
     val language: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[LANGUAGE_KEY] ?: "system"
+        AppLanguage.fromCode(preferences[LANGUAGE_KEY])?.code ?: AppLanguage.fallback.code
+    }
+
+    val isLanguageManuallySelected: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[MANUAL_LANGUAGE_KEY] ?: false
     }
 
     suspend fun setLanguage(language: String) {
         context.dataStore.edit { preferences ->
             preferences[LANGUAGE_KEY] = language
+            preferences[MANUAL_LANGUAGE_KEY] = true
+        }
+    }
+
+    suspend fun setResolvedLanguage(language: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LANGUAGE_KEY] = language
+            preferences[MANUAL_LANGUAGE_KEY] = false
         }
     }
 

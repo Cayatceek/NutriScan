@@ -4,9 +4,9 @@ import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.nutriscan.app.R
 import com.nutriscan.app.data.local.SettingsDataStore
 import com.nutriscan.app.data.local.entity.ProductEntity
-import com.nutriscan.app.data.repository.FakeProductRepository
 import com.nutriscan.app.data.repository.ProductRepositoryImpl
 import com.nutriscan.app.data.repository.ScanHistoryRepository
 import com.nutriscan.app.domain.analysis.AnalysisEngine
@@ -24,11 +24,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.nutriscan.app.localization.localizedAnalysisItem
+import com.nutriscan.app.localization.localizedNutriScoreNote
+import com.nutriscan.app.localization.localizedRecommendation
+import com.nutriscan.app.localization.localizedStatusLabel
 
 data class ResultUiState(
     val scanResult: ScanResult? = null,
     val productEntity: ProductEntity? = null,
     val productAnalysis: ProductAnalysis? = null,
+    val isCachedResult: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val isFavorite: Boolean = false,
@@ -37,7 +42,6 @@ data class ResultUiState(
 
 class ResultViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val fakeProductRepository = FakeProductRepository()
     private val productRepository = ProductRepositoryImpl(application)
     private val scanHistoryRepository = ScanHistoryRepository(application)
     private val settingsDataStore = SettingsDataStore(application)
@@ -58,25 +62,7 @@ class ResultViewModel(application: Application) : AndroidViewModel(application) 
                     }
 
                     val isSaved = scanHistoryRepository.hasHistoryForProduct(productId)
-                    val alternatives = fakeProductRepository
-                        .getSuggestedAlternatives(excludeProductId = productEntity.id)
-                        .map { alternative ->
-                            Product(
-                                id = alternative.id,
-                                name = alternative.name,
-                                brand = alternative.brand,
-                                nutriscore = alternative.nutriscore,
-                                ingredients = alternative.ingredients.map { ingredient ->
-                                    Ingredient(
-                                        name = ingredient.name,
-                                        type = ingredient.type,
-                                        description = ingredient.description
-                                    )
-                                },
-                                imageUrl = alternative.imageUrl
-                            )
-                        }
-                    val scanResult = createScanResult(productEntity, calculatedNutriScore, alternatives)
+                    val scanResult = createScanResult(productEntity, calculatedNutriScore, emptyList())
                     val analysisSettings = AnalysisSettings(
                         selectedAllergens = mapSelectedAllergens(settingsDataStore.selectedAllergens.first()),
                         halalModeEnabled = settingsDataStore.halalMode.first()
@@ -87,19 +73,20 @@ class ResultViewModel(application: Application) : AndroidViewModel(application) 
                         scanResult = scanResult,
                         productEntity = productEntity,
                         productAnalysis = productAnalysis,
+                        isCachedResult = productEntity.source == "cache",
                         isSaved = isSaved,
                         isFavorite = productEntity.isFavorite,
                         isLoading = false
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
-                        error = "Product not found",
+                        error = getApplication<Application>().getString(R.string.result_error_product_not_found),
                         isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Unknown error",
+                    error = e.message ?: getApplication<Application>().getString(R.string.error_generic),
                     isLoading = false
                 )
             }
@@ -121,44 +108,48 @@ class ResultViewModel(application: Application) : AndroidViewModel(application) 
     fun shareResult(): Intent? {
         val scanResult = _uiState.value.scanResult ?: return null
         val analysis = _uiState.value.productAnalysis
+        val app = getApplication<Application>()
+        val recommendation = analysis?.let { app.localizedRecommendation(it.safetyStatus) }
         
         val shareText = buildString {
             appendLine("${scanResult.product.name} - ${scanResult.product.brand}")
-            appendLine("Nutri-Score: ${scanResult.product.nutriscore.grade}")
+            appendLine(app.getString(R.string.result_meta_nutriscore, scanResult.product.nutriscore.grade))
             appendLine()
             
             analysis?.let { productAnalysis ->
-                appendLine("Safety Status: ${productAnalysis.safetyStatus.name}")
-                if (productAnalysis.warnings.isNotEmpty()) {
-                    appendLine("Warnings:")
-                    productAnalysis.warnings.forEach { warning ->
-                        appendLine("- ${warning.title}: ${warning.message}")
-                    }
-                }
-                appendLine()
-                appendLine("Recommendation: ${productAnalysis.recommendation.title}")
-                appendLine(productAnalysis.recommendation.message)
-                appendLine()
-                appendLine("Explanation:")
-                appendLine(productAnalysis.explanation)
+                appendLine(app.getString(R.string.share_safety_status, app.localizedStatusLabel(productAnalysis.safetyStatus)))
                 if (productAnalysis.detectedAllergens.isNotEmpty()) {
-                    appendLine()
-                    appendLine("Detected allergens: ${productAnalysis.detectedAllergens.joinToString(", ")}")
+                    appendLine(app.getString(R.string.share_detected_allergens, productAnalysis.detectedAllergens.joinToString(", ") { item ->
+                        app.localizedAnalysisItem(item)
+                    }))
                 }
+                if (productAnalysis.harmfulIngredients.isNotEmpty()) {
+                    appendLine(app.getString(R.string.share_harmful_ingredients, productAnalysis.harmfulIngredients.joinToString(", ") { item ->
+                        app.localizedAnalysisItem(item)
+                    }))
+                }
+                appendLine()
+                recommendation?.let { (title, message) ->
+                    appendLine(app.getString(R.string.share_recommendation, title))
+                    appendLine(message)
+                }
+                appendLine()
+                appendLine(app.getString(R.string.share_explanation_heading))
+                appendLine(app.localizedNutriScoreNote(scanResult.product.nutriscore))
             }
             
-            appendLine("Ingredients:")
+            appendLine(app.getString(R.string.share_ingredients_heading))
             scanResult.product.ingredients.forEach { ingredient ->
                 appendLine("- ${ingredient.name}")
             }
             
             appendLine()
-            appendLine("Shared from NutriScan app")
+            appendLine(app.getString(R.string.share_footer))
         }
         
         return Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, "Product Analysis: ${scanResult.product.name}")
+            putExtra(Intent.EXTRA_SUBJECT, app.getString(R.string.share_subject, scanResult.product.name))
             putExtra(Intent.EXTRA_TEXT, shareText)
         }
     }
@@ -207,11 +198,11 @@ class ResultViewModel(application: Application) : AndroidViewModel(application) 
         )
 
         val explanation = when (nutriScore) {
-            NutriScore.A -> "Excellent choice! This product has a very good nutritional quality."
-            NutriScore.B -> "Good nutritional quality. This product can be part of a balanced diet."
-            NutriScore.C -> "Average nutritional quality. Consume in moderation."
-            NutriScore.D -> "Poor nutritional quality. Limit consumption."
-            NutriScore.E -> "Very poor nutritional quality. Avoid regular consumption."
+            NutriScore.A -> getApplication<Application>().getString(R.string.nutriscore_a)
+            NutriScore.B -> getApplication<Application>().getString(R.string.nutriscore_b)
+            NutriScore.C -> getApplication<Application>().getString(R.string.nutriscore_c)
+            NutriScore.D -> getApplication<Application>().getString(R.string.nutriscore_d)
+            NutriScore.E -> getApplication<Application>().getString(R.string.nutriscore_e)
         }
 
         return ScanResult(product, explanation, alternatives)

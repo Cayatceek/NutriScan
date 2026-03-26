@@ -1,0 +1,10 @@
+<resources>
+    <string name="scanner_camera_permission_action">Allow camera</string>
+    <string name="scanner_camera_permission_denied_title">Camera access required</string>
+    <string name="scanner_camera_permission_denied_message">Enable camera access for live barcode scanning. You can still enter the barcode manually.</string>
+    <string name="scanner_camera_error_title">Camera unavailable</string>
+    <string name="scanner_camera_unavailable">The barcode scanner could not start right now. Try again or enter the barcode manually.</string>
+    <string name="scanner_live_hint">Live scanner is active. Hold the product barcode inside the frame.</string>
+    <string name="scanner_overlay_hint">Align the barcode inside the frame</string>
+    <string name="scanner_button_enter_barcode">Enter barcode manually</string>
+</resources>

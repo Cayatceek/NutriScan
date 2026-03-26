@@ -3,6 +3,7 @@ package com.nutriscan.app.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.nutriscan.app.localization.LocaleManager
 import com.nutriscan.app.data.local.SettingsDataStore
 import com.nutriscan.app.data.repository.ScanHistoryRepository
 import com.nutriscan.app.domain.analyzer.Allergen
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val selectedLanguage: String = "system",
+    val selectedLanguage: String = "uz",
     val selectedTheme: String = "system",
     val selectedAllergens: Set<Allergen> = emptySet(),
     val halalModeEnabled: Boolean = false,
@@ -85,7 +86,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setLanguage(language: String) {
         viewModelScope.launch {
             settingsDataStore.setLanguage(language)
-            LanguageManager.applyLanguage(getApplication(), language)
+            LocaleManager.applyLanguage(getApplication(), language)
         }
     }
 
