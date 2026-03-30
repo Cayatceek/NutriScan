@@ -114,6 +114,7 @@
     <string name="result_title">Xavfsizlik xulosasi</string>
     <string name="result_loading_title">Tahlil tayyorlanmoqda</string>
     <string name="result_loading_message">Mahsulot uchun aniq va qisqa xavfsizlik xulosasi yaratilmoqda.</string>
+    <string name="loading_brand_slogan">Ongli tanlashga yordam beramiz</string>
     <string name="result_error_title">Natijani ochib bo‘lmadi</string>
     <string name="result_error_default">Mahsulotni hozir yuklab bo‘lmadi.</string>
     <string name="result_error_product_not_found">Mahsulot topilmadi</string>

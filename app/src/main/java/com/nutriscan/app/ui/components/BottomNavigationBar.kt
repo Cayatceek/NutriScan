@@ -14,28 +14,73 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.nutriscan.app.navigation.BottomNavItem
 import androidx.compose.ui.unit.dp
+
+private val bottomNavItems = listOf(
+    BottomNavItem.Home,
+    BottomNavItem.History,
+    BottomNavItem.Help,
+    BottomNavItem.Settings
+)
+
+@Composable
+fun BottomNavigationBar(
+    selectedRoute: String,
+    onItemSelected: (BottomNavItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BottomNavigationBarContent(
+        selectedRoute = selectedRoute,
+        onItemSelected = onItemSelected,
+        modifier = modifier
+    )
+}
 
 @Composable
 fun BottomNavigationBar(
     navController: NavController,
     modifier: Modifier = Modifier
 ) {
-    val items = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.History,
-        BottomNavItem.FirstAid,
-        BottomNavItem.Settings
-    )
-
     val navBackStackEntry = navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry.value?.destination?.route
+    val currentDestination = navBackStackEntry.value?.destination
+    val selectedRoute = remember(currentDestination) {
+        bottomNavItems.firstOrNull { item ->
+            currentDestination?.hierarchy?.any { destination ->
+                destination.route == item.route
+            } == true
+        }?.route ?: BottomNavItem.Home.route
+    }
 
+    BottomNavigationBarContent(
+        selectedRoute = selectedRoute,
+        onItemSelected = { item ->
+            if (selectedRoute != item.route) {
+                val restored = navController.safePopToRoute(item.navigateRoute)
+                if (!restored) {
+                    navController.navigate(item.navigateRoute) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun BottomNavigationBarContent(
+    selectedRoute: String,
+    onItemSelected: (BottomNavItem) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surface,
@@ -46,15 +91,15 @@ fun BottomNavigationBar(
             containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp
         ) {
-            items.forEach { item ->
-                val selected = currentRoute == item.route
+            bottomNavItems.forEach { item ->
+                val selected = item.route == selectedRoute
                 NavigationBarItem(
                     icon = {
                         Icon(
                             imageVector = when (item) {
                                 is BottomNavItem.Home -> Icons.Outlined.Home
                                 is BottomNavItem.History -> Icons.Outlined.History
-                                is BottomNavItem.FirstAid -> Icons.Outlined.LocalHospital
+                                is BottomNavItem.Help -> Icons.Outlined.LocalHospital
                                 is BottomNavItem.Settings -> Icons.Outlined.Settings
                             },
                             contentDescription = stringResource(item.titleRes)
@@ -63,14 +108,8 @@ fun BottomNavigationBar(
                     label = { Text(stringResource(item.titleRes)) },
                     selected = selected,
                     onClick = {
-                        navController.navigate(item.route) {
-                            navController.graph.startDestinationRoute?.let { route ->
-                                popUpTo(route) {
-                                    saveState = true
-                                }
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+                        if (!selected) {
+                            onItemSelected(item)
                         }
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -88,4 +127,9 @@ fun BottomNavigationBar(
 
 object NavigationBarDefaults {
     val Elevation = 8.dp
+}
+
+private fun NavController.safePopToRoute(route: String, inclusive: Boolean = false): Boolean {
+    val hasTarget = runCatching { getBackStackEntry(route) }.isSuccess
+    return if (hasTarget) popBackStack(route, inclusive) else false
 }

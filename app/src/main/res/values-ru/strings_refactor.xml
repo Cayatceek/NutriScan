@@ -1,0 +1,51 @@
+<resources>
+    <string name="nav_help">Помощь</string>
+
+    <string name="onboarding_slide_1_title">Понимай состав продуктов за секунды</string>
+    <string name="onboarding_slide_1_body">NutriScan быстро показывает ингредиенты, аллергены и главные сигналы риска.</string>
+    <string name="onboarding_slide_2_title">Сканируй. Анализируй. Выбирай осознанно.</string>
+    <string name="onboarding_slide_2_body">Наведи камеру на штрихкод, а приложение поможет быстро понять продукт.</string>
+    <string name="onboarding_slide_3_title">Выбирай безопаснее и легче</string>
+    <string name="onboarding_slide_3_body">Получай понятные подсказки по аллергенам, добавкам и диетическим режимам.</string>
+    <string name="onboarding_button_next">Далее</string>
+    <string name="onboarding_button_continue">Продолжить</string>
+
+    <string name="auth_choice_title">Продолжить с NutriScan</string>
+    <string name="auth_choice_subtitle">Войдите, чтобы синхронизировать историю и избранное, или начните сканировать сразу.</string>
+    <string name="auth_choice_login">Войти</string>
+    <string name="auth_choice_register">Регистрация</string>
+    <string name="auth_choice_later">Позже</string>
+
+    <string name="login_title">Вход в аккаунт</string>
+    <string name="login_subtitle">Сохраняйте историю, избранное и настройки между устройствами.</string>
+    <string name="login_action">Войти</string>
+    <string name="login_loading">Входим</string>
+
+    <string name="register_title">Создать аккаунт</string>
+    <string name="register_subtitle">Зарегистрируйтесь, чтобы сохранять и синхронизировать свой опыт в NutriScan.</string>
+    <string name="register_action">Создать аккаунт</string>
+    <string name="register_loading">Создаём</string>
+
+    <string name="help_title">Помощь и забота</string>
+    <string name="help_subtitle">Короткие практичные подсказки и простые объяснения по ингредиентам.</string>
+    <string name="help_first_aid_title">Первая помощь</string>
+    <string name="help_first_aid_subtitle">Посмотрите, какие симптомы важны при аллергической реакции и когда нужна срочная помощь.</string>
+    <string name="help_additives_title">Энциклопедия добавок</string>
+    <string name="help_additives_subtitle">Читайте простые объяснения популярных E-добавок и пищевых компонентов.</string>
+
+    <string name="additives_title">Энциклопедия добавок</string>
+    <string name="additives_subtitle">Это обучающий раздел: он простым языком объясняет популярные пищевые добавки.</string>
+    <string name="additives_item_1_title">Куркумин</string>
+    <string name="additives_item_1_body">Краситель. Обычно используется для жёлтого оттенка и часто связан со специями.</string>
+    <string name="additives_item_2_title">Сорбат калия</string>
+    <string name="additives_item_2_body">Консервант, который помогает дольше сохранять продукт. Часто встречается в напитках и соусах.</string>
+    <string name="additives_item_3_title">Глутамат натрия</string>
+    <string name="additives_item_3_body">Усилитель вкуса. Часто встречается в готовой еде и снеках.</string>
+    <string name="additives_item_4_title">Ацесульфам К</string>
+    <string name="additives_item_4_body">Низкокалорийный подсластитель. Может встречаться в сладких напитках и фитнес-продуктах.</string>
+
+    <string name="scanner_help_title">Как сканировать</string>
+    <string name="scanner_help_tip_scan">Держите телефон ровно и поместите штрихкод в рамку. При хорошем свете распознавание происходит быстрее.</string>
+    <string name="scanner_help_tip_not_found">Если продукт не найден, введите штрихкод вручную или используйте поиск по названию.</string>
+    <string name="got_it">Понятно</string>
+</resources>

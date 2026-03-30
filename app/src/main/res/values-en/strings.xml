@@ -114,6 +114,7 @@
     <string name="result_title">Safety summary</string>
     <string name="result_loading_title">Preparing analysis</string>
     <string name="result_loading_message">Building a clear safety summary for this product.</string>
+    <string name="loading_brand_slogan">Helping you choose with clarity</string>
     <string name="result_error_title">Result unavailable</string>
     <string name="result_error_default">We could not load this product right now.</string>
     <string name="result_error_product_not_found">Product not found</string>

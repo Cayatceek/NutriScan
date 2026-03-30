@@ -1,11 +1,16 @@
 package com.nutriscan.app.ui.screens
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,24 +18,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MedicalInformation
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -38,172 +49,211 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nutriscan.app.R
 import com.nutriscan.app.ui.theme.NutriScanTheme
-import com.nutriscan.app.ui.theme.card_stroke
+import com.nutriscan.app.ui.theme.UiTokens
 import com.nutriscan.app.ui.theme.muted_text
 
+private data class OnboardingSlideModel(
+    val icon: ImageVector,
+    val titleRes: Int,
+    val bodyRes: Int
+)
+
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun OnboardingScreen(
     onContinue: () -> Unit
 ) {
-    LazyColumn(
+    val slides = remember {
+        listOf(
+            OnboardingSlideModel(
+                icon = Icons.Outlined.Visibility,
+                titleRes = R.string.onboarding_slide_1_title,
+                bodyRes = R.string.onboarding_slide_1_body
+            ),
+            OnboardingSlideModel(
+                icon = Icons.Outlined.QrCodeScanner,
+                titleRes = R.string.onboarding_slide_2_title,
+                bodyRes = R.string.onboarding_slide_2_body
+            ),
+            OnboardingSlideModel(
+                icon = Icons.Outlined.Shield,
+                titleRes = R.string.onboarding_slide_3_title,
+                bodyRes = R.string.onboarding_slide_3_body
+            )
+        )
+    }
+    var currentSlide by remember { mutableIntStateOf(0) }
+    val isLastSlide = currentSlide == slides.lastIndex
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        item {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, card_stroke),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        MaterialTheme.colorScheme.surface
-                                    )
-                                )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .background(MaterialTheme.colorScheme.surface, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                            Text(
-                                text = stringResource(R.string.onboarding_title),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = stringResource(R.string.onboarding_subtitle),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = muted_text,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = stringResource(R.string.onboarding_body),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = muted_text
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        MaterialTheme.colorScheme.background
                     )
+                )
+            )
+            .padding(horizontal = 20.dp, vertical = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onContinue) {
+                    Text(stringResource(R.string.onboarding_skip))
                 }
             }
-        }
 
-        item {
-            FeatureCard(
-                icon = Icons.Default.Shield,
-                title = stringResource(R.string.onboarding_feature_safety_title),
-                body = stringResource(R.string.onboarding_feature_safety_body)
-            )
-        }
-
-        item {
-            FeatureCard(
-                icon = Icons.Default.MedicalInformation,
-                title = stringResource(R.string.onboarding_feature_guidance_title),
-                body = stringResource(R.string.onboarding_feature_guidance_body)
-            )
-        }
-
-        item {
-            FeatureCard(
-                icon = Icons.Default.QrCodeScanner,
-                title = stringResource(R.string.onboarding_feature_flow_title),
-                body = stringResource(R.string.onboarding_feature_flow_body)
-            )
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            Button(
-                onClick = onContinue,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceM)
             ) {
-                Text(
-                    text = stringResource(R.string.onboarding_button_start),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                AnimatedContent(
+                    targetState = currentSlide,
+                    transitionSpec = {
+                        (slideInHorizontally { it / 5 } + fadeIn()) togetherWith
+                            (slideOutHorizontally { -it / 5 } + fadeOut())
+                    },
+                    label = "onboarding-slide"
+                ) { page ->
+                    OnboardingSlide(slide = slides[page])
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    slides.forEachIndexed { index, _ ->
+                        val selected = index == currentSlide
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .width(if (selected) 28.dp else 8.dp)
+                                .height(8.dp)
+                                .background(
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
+                                    },
+                                    shape = RoundedCornerShape(999.dp)
+                                )
+                        )
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceS)) {
+                Button(
+                    onClick = {
+                        if (isLastSlide) onContinue() else currentSlide += 1
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(UiTokens.ButtonHeight),
+                    shape = RoundedCornerShape(UiTokens.Radius)
+                ) {
+                    Text(
+                        text = if (isLastSlide) {
+                            stringResource(R.string.onboarding_button_continue)
+                        } else {
+                            stringResource(R.string.onboarding_button_next)
+                        }
+                    )
+                }
+
+                if (currentSlide > 0) {
+                    TextButton(
+                        onClick = { currentSlide -= 1 },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(stringResource(R.string.back))
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FeatureCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    body: String
-) {
+private fun OnboardingSlide(slide: OnboardingSlideModel) {
     Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, card_stroke),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = UiTokens.CardElevationMedium)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.Top
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    .fillMaxWidth()
+                    .height(300.dp)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.background
+                            )
+                        ),
+                        shape = RoundedCornerShape(28.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(UiTokens.SpaceM)
+                ) {
+                    Surface(
+                        modifier = Modifier.size(88.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = slide.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(42.dp)
+                            )
+                        }
+                    }
+
+                    repeat(3) { index ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.72f - (index * 0.1f))
+                                .height(if (index == 0) 14.dp else 10.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f + index * 0.05f),
+                                    RoundedCornerShape(999.dp)
+                                )
+                        )
+                    }
+                }
             }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(slide.titleRes),
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = muted_text
+                    text = stringResource(slide.bodyRes),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = muted_text,
+                    textAlign = TextAlign.Start
                 )
             }
         }

@@ -1,0 +1,51 @@
+<resources>
+    <string name="nav_help">Yordam</string>
+
+    <string name="onboarding_slide_1_title">Mahsulot tarkibini soniyalarda tushuning</string>
+    <string name="onboarding_slide_1_body">NutriScan ingredientlar, allergenlar va asosiy xavf signallarini tez ko‘rsatadi.</string>
+    <string name="onboarding_slide_2_title">Skanerlang. Tahlil qiling. Ongli tanlang.</string>
+    <string name="onboarding_slide_2_body">Shtrix-kodni ushlang va ilova mahsulotni tekshirib, qarorni yengillashtiradi.</string>
+    <string name="onboarding_slide_3_title">Xavfsizroq va yengilroq tanlov qiling</string>
+    <string name="onboarding_slide_3_body">Allergiyalar, zararli qo‘shimchalar va diet rejimlari bo‘yicha aniq yo‘l-yo‘riq oling.</string>
+    <string name="onboarding_button_next">Keyingi</string>
+    <string name="onboarding_button_continue">Davom etish</string>
+
+    <string name="auth_choice_title">NutriScan bilan davom eting</string>
+    <string name="auth_choice_subtitle">Hisob orqali tarixni sinxronlashingiz mumkin, lekin xohlasangiz hozirning o‘zida skanerlashni boshlaysiz.</string>
+    <string name="auth_choice_login">Kirish</string>
+    <string name="auth_choice_register">Ro‘yxatdan o‘tish</string>
+    <string name="auth_choice_later">Keyinroq</string>
+
+    <string name="login_title">Hisobga kiring</string>
+    <string name="login_subtitle">Tarix, sevimlilar va sozlamalarni saqlash uchun kiring.</string>
+    <string name="login_action">Kirish</string>
+    <string name="login_loading">Kirilmoqda</string>
+
+    <string name="register_title">Hisob yarating</string>
+    <string name="register_subtitle">NutriScan tajribangizni saqlash va sinxronlash uchun ro‘yxatdan o‘ting.</string>
+    <string name="register_action">Ro‘yxatdan o‘tish</string>
+    <string name="register_loading">Yaratilmoqda</string>
+
+    <string name="help_title">Yordam va g‘amxo‘rlik</string>
+    <string name="help_subtitle">Qisqa amaliy yordam va ingredientlar haqida sodda ma’lumotlar.</string>
+    <string name="help_first_aid_title">Birinchi yordam</string>
+    <string name="help_first_aid_subtitle">Allergik reaksiya paytida nimalarga e’tibor berish va qachon yordam chaqirish kerakligini ko‘ring.</string>
+    <string name="help_additives_title">Qo‘shimchalar ensiklopediyasi</string>
+    <string name="help_additives_subtitle">Ko‘p uchraydigan E-qo‘shimchalar va ularning sodda izohlarini o‘qing.</string>
+
+    <string name="additives_title">Qo‘shimchalar ensiklopediyasi</string>
+    <string name="additives_subtitle">Bu bo‘lim o‘quv maqsadida: tez-tez uchraydigan qo‘shimchalar nima ekanini sodda tilda tushuntiradi.</string>
+    <string name="additives_item_1_title">Kurkumin</string>
+    <string name="additives_item_1_body">Rang beruvchi qo‘shimcha. Odatda ziravorlardan olinadi va ko‘proq sariq tus berish uchun ishlatiladi.</string>
+    <string name="additives_item_2_title">Kaliy sorbat</string>
+    <string name="additives_item_2_body">Mahsulotni uzoqroq saqlashga yordam beruvchi konservant. Odatda ichimlik va soslarda uchraydi.</string>
+    <string name="additives_item_3_title">Mononatriy glutamat</string>
+    <string name="additives_item_3_body">Ta’mni kuchaytiruvchi qo‘shimcha. Tayyor ovqatlar va gazaklarda tez-tez uchraydi.</string>
+    <string name="additives_item_4_title">Acesulfam K</string>
+    <string name="additives_item_4_body">Kaloriyasi past shirinlashtiruvchi. Shirin ichimliklar va fitness mahsulotlarida bo‘lishi mumkin.</string>
+
+    <string name="scanner_help_title">Qanday skanerlash kerak</string>
+    <string name="scanner_help_tip_scan">Telefonni barqaror tuting va shtrix-kodni ramkaning ichiga joylashtiring. Yorug‘lik yetarli bo‘lsa, aniqlash tezroq bo‘ladi.</string>
+    <string name="scanner_help_tip_not_found">Mahsulot topilmasa, shtrix-kodni qo‘lda kiriting yoki nom bo‘yicha qidiruvdan foydalaning.</string>
+    <string name="got_it">Tushunarli</string>
+</resources>

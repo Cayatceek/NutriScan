@@ -11,13 +11,19 @@ import com.nutriscan.app.data.repository.FakeProductRepository
 import com.nutriscan.app.data.repository.ProductLookupResult
 import com.nutriscan.app.data.repository.ProductRepositoryImpl
 import com.nutriscan.app.data.repository.ScanHistoryRepository
-import kotlinx.coroutines.delay
+import com.nutriscan.app.localization.UiText
+import com.nutriscan.app.localization.uiText
+import com.nutriscan.app.ui.components.ScannerRuntime
+import com.nutriscan.app.util.BrandedLoadingOutcome
+import com.nutriscan.app.util.runBrandedLoadingGate
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import android.util.Log
 
 enum class ScannerPanel {
     NONE,
@@ -42,7 +48,7 @@ data class DemoScenario(
 data class CameraUiState(
     val scanState: ScanState = ScanState.Idle,
     val lastBarcode: String? = null,
-    val errorMessage: String? = null,
+    val errorMessage: UiText? = null,
     val halalModeEnabled: Boolean = false,
     val healthyModeEnabled: Boolean = false,
     val selectedAllergensCount: Int = 0,
@@ -62,6 +68,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val productRepository = ProductRepositoryImpl(application)
     private val scanHistoryRepository = ScanHistoryRepository(application)
     private val settingsDataStore = SettingsDataStore(application)
+    val scannerRuntime: ScannerRuntime by lazy(LazyThreadSafetyMode.NONE) {
+        ScannerRuntime(application)
+    }
 
     private val _uiState = MutableStateFlow(
         CameraUiState(
@@ -69,6 +78,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         )
     )
     val uiState: StateFlow<CameraUiState> = _uiState.asStateFlow()
+    private var scannerPrewarmJob: Job? = null
+    private var activeLookupJob: Job? = null
+    private var activeLookupToken: Long = 0L
 
     init {
         observeSettings()
@@ -89,6 +101,34 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                     healthyModeEnabled = healthyModeEnabled
                 )
             }
+        }
+    }
+
+    fun prepareScannerRuntime() {
+        if (scannerRuntime.isWarmedUp()) return
+        if (scannerPrewarmJob?.isActive == true) return
+
+        scannerPrewarmJob = viewModelScope.launch {
+            runCatching {
+                scannerRuntime.warmUp()
+            }
+        }
+    }
+
+    fun onScannerVisibilityChanged(isVisible: Boolean) {
+        if (isVisible) return
+
+        val hadInFlightLookup = activeLookupJob != null || _uiState.value.scanState == ScanState.Loading
+        invalidateActiveLookup()
+        if (hadInFlightLookup) {
+            _uiState.value = _uiState.value.copy(
+                scanState = if (_uiState.value.scanState == ScanState.Loading) {
+                    ScanState.Idle
+                } else {
+                    _uiState.value.scanState
+                },
+                activeDemoScenarioId = null
+            )
         }
     }
 
@@ -117,29 +157,30 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun submitBarcodeInput() {
         val barcode = _uiState.value.barcodeInput.trim()
         if (barcode.isBlank()) {
+            val error = uiText(R.string.scanner_error_enter_barcode)
             _uiState.value = _uiState.value.copy(
-                scanState = ScanState.Error(message(R.string.scanner_error_enter_barcode)),
-                errorMessage = message(R.string.scanner_error_enter_barcode)
+                scanState = ScanState.Error(error),
+                errorMessage = error
             )
             return
         }
 
-        viewModelScope.launch {
-            performBarcodeLookup(barcode)
+        launchLookup { lookupToken ->
+            performBarcodeLookup(barcode, lookupToken)
         }
     }
 
     fun onBarcodeDetected(barcode: String) {
-        viewModelScope.launch {
-            performBarcodeLookup(barcode)
+        launchLookup { lookupToken ->
+            performBarcodeLookup(barcode, lookupToken)
         }
     }
 
     fun runDemoScenario(scenario: DemoScenario) {
         if (!BuildConfig.DEBUG) return
-        viewModelScope.launch {
+        launchLookup { lookupToken ->
             _uiState.value = _uiState.value.copy(activeDemoScenarioId = scenario.id)
-            performDemoLookup(scenario.barcode)
+            performDemoLookup(scenario.barcode, lookupToken)
         }
     }
 
@@ -149,7 +190,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = _uiState.value.copy(
                 isManualSearchLoading = false,
                 manualSearchResults = emptyList(),
-                errorMessage = message(R.string.scanner_error_short_search)
+                errorMessage = uiText(R.string.scanner_error_short_search)
             )
             return
         }
@@ -169,7 +210,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isManualSearchLoading = false,
-                    errorMessage = e.message ?: message(R.string.scanner_error_search_products)
+                    errorMessage = e.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let(UiText::DynamicString)
+                        ?: uiText(R.string.scanner_error_search_products)
                 )
             }
         }
@@ -214,120 +258,255 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             clearError()
             return
         }
-        viewModelScope.launch {
-            performBarcodeLookup(barcode)
+        launchLookup { lookupToken ->
+            performBarcodeLookup(barcode, lookupToken)
         }
     }
 
-    private suspend fun performBarcodeLookup(barcode: String) {
+    private suspend fun performBarcodeLookup(barcode: String, lookupToken: Long) {
         if (barcode.isBlank()) {
-            _uiState.value = _uiState.value.copy(
-                scanState = ScanState.Error(message(R.string.scanner_error_invalid_barcode)),
-                errorMessage = message(R.string.scanner_error_invalid_barcode),
-                activeDemoScenarioId = null
-            )
+            val error = uiText(R.string.scanner_error_invalid_barcode)
+            deliverLookupState(lookupToken) {
+                it.copy(
+                    scanState = ScanState.Error(error),
+                    errorMessage = error,
+                    activeDemoScenarioId = null
+                )
+            }
             return
         }
 
-        _uiState.value = _uiState.value.copy(
-            scanState = ScanState.Scanning,
-            lastBarcode = barcode,
-            errorMessage = null,
-            activePanel = ScannerPanel.NONE,
-            alternatives = emptyList()
-        )
-
-        delay(250)
-
-        _uiState.value = _uiState.value.copy(
-            scanState = ScanState.Loading,
-            barcodeInput = barcode
-        )
-
         try {
-            when (val result = productRepository.lookupBarcode(barcode)) {
-                is ProductLookupResult.Success -> {
-                    persistProduct(result.product)
-                    _uiState.value = _uiState.value.copy(
-                        scanState = ScanState.Success(result.product.id),
-                        lastBarcode = result.product.barcode ?: result.product.id,
-                        alternatives = emptyList(),
-                        errorMessage = null
-                    )
+            deliverLookupState(lookupToken) {
+                it.copy(
+                    scanState = ScanState.Loading,
+                    lastBarcode = barcode,
+                    errorMessage = null,
+                    activePanel = ScannerPanel.NONE,
+                    alternatives = emptyList(),
+                    barcodeInput = barcode
+                )
+            } ?: return
+
+            when (val gatedLookup = runBrandedLoadingGate { productRepository.lookupBarcode(barcode) }) {
+                is BrandedLoadingOutcome.Success -> {
+                    when (val result = gatedLookup.value) {
+                        is ProductLookupResult.Success -> {
+                            if (!isLookupActive(lookupToken)) {
+                                debugLog("Ignoring stale barcode lookup success for $barcode")
+                                return
+                            }
+                            persistProduct(result.product)
+                            deliverLookupState(lookupToken) {
+                                it.copy(
+                                    scanState = ScanState.Success(result.product.id),
+                                    lastBarcode = result.product.barcode ?: result.product.id,
+                                    alternatives = emptyList(),
+                                    errorMessage = null
+                                )
+                            }
+                        }
+
+                        ProductLookupResult.NotFound -> {
+                            deliverLookupState(lookupToken) {
+                                it.copy(
+                                    scanState = ScanState.NotFound,
+                                    lastBarcode = barcode,
+                                    alternatives = emptyList(),
+                                    errorMessage = null
+                                )
+                            }
+                        }
+
+                        is ProductLookupResult.NetworkError -> {
+                            val error = uiText(R.string.scanner_error_network)
+                            deliverLookupState(lookupToken) {
+                                it.copy(
+                                    scanState = ScanState.Error(error),
+                                    errorMessage = error,
+                                    activeDemoScenarioId = null
+                                )
+                            }
+                        }
+
+                        is ProductLookupResult.ServerUnavailable -> {
+                            val error = uiText(R.string.scanner_error_server)
+                            deliverLookupState(lookupToken) {
+                                it.copy(
+                                    scanState = ScanState.Error(error),
+                                    errorMessage = error,
+                                    activeDemoScenarioId = null
+                                )
+                            }
+                        }
+
+                        is ProductLookupResult.UnknownError -> {
+                            val error = result.throwable?.message
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let(UiText::DynamicString)
+                                ?: uiText(R.string.scanner_error_lookup_failed)
+                            deliverLookupState(lookupToken) {
+                                it.copy(
+                                    scanState = ScanState.Error(error),
+                                    errorMessage = error,
+                                    activeDemoScenarioId = null
+                                )
+                            }
+                        }
+                    }
                 }
 
-                ProductLookupResult.NotFound -> {
-                    _uiState.value = _uiState.value.copy(
-                        scanState = ScanState.NotFound,
-                        lastBarcode = barcode,
-                        alternatives = emptyList(),
-                        errorMessage = null
-                    )
+                BrandedLoadingOutcome.Timeout -> {
+                    val error = uiText(R.string.scanner_error_lookup_failed)
+                    deliverLookupState(lookupToken) {
+                        it.copy(
+                            scanState = ScanState.Error(error),
+                            errorMessage = error,
+                            activeDemoScenarioId = null
+                        )
+                    }
                 }
 
-                is ProductLookupResult.NetworkError -> {
-                    _uiState.value = _uiState.value.copy(
-                        scanState = ScanState.Error(message(R.string.scanner_error_network)),
-                        errorMessage = message(R.string.scanner_error_network),
-                        activeDemoScenarioId = null
-                    )
-                }
-
-                is ProductLookupResult.ServerUnavailable -> {
-                    _uiState.value = _uiState.value.copy(
-                        scanState = ScanState.Error(message(R.string.scanner_error_server)),
-                        errorMessage = message(R.string.scanner_error_server),
-                        activeDemoScenarioId = null
-                    )
-                }
-
-                is ProductLookupResult.UnknownError -> {
-                    _uiState.value = _uiState.value.copy(
-                        scanState = ScanState.Error(message(R.string.scanner_error_lookup_failed)),
-                        errorMessage = result.throwable?.message ?: message(R.string.scanner_error_lookup_failed),
-                        activeDemoScenarioId = null
-                    )
+                is BrandedLoadingOutcome.Error -> {
+                    val error = gatedLookup.throwable.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let(UiText::DynamicString)
+                        ?: uiText(R.string.scanner_error_lookup_failed)
+                    deliverLookupState(lookupToken) {
+                        it.copy(
+                            scanState = ScanState.Error(error),
+                            errorMessage = error,
+                            activeDemoScenarioId = null
+                        )
+                    }
                 }
             }
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                scanState = ScanState.Error(message(R.string.scanner_error_lookup_failed)),
-                errorMessage = e.message ?: message(R.string.scanner_error_lookup_failed),
-                activeDemoScenarioId = null
-            )
+        } finally {
+            clearLookupJobIfActive(lookupToken)
         }
     }
 
-    private suspend fun performDemoLookup(barcode: String) {
-        _uiState.value = _uiState.value.copy(
-            scanState = ScanState.Scanning,
-            lastBarcode = barcode,
-            errorMessage = null,
-            activePanel = ScannerPanel.NONE,
-            alternatives = emptyList()
-        )
+    private suspend fun performDemoLookup(barcode: String, lookupToken: Long) {
+        try {
+            deliverLookupState(lookupToken) {
+                it.copy(
+                    scanState = ScanState.Loading,
+                    lastBarcode = barcode,
+                    errorMessage = null,
+                    activePanel = ScannerPanel.NONE,
+                    alternatives = emptyList(),
+                    barcodeInput = barcode
+                )
+            } ?: return
 
-        delay(250)
+            when (val gatedLookup = runBrandedLoadingGate { debugProductRepository.searchByBarcode(barcode) }) {
+                is BrandedLoadingOutcome.Success -> {
+                    val product = gatedLookup.value
+                    if (product != null) {
+                        if (!isLookupActive(lookupToken)) {
+                            debugLog("Ignoring stale demo lookup success for $barcode")
+                            return
+                        }
+                        persistProduct(product.copy(source = "debug"))
+                        deliverLookupState(lookupToken) {
+                            it.copy(
+                                scanState = ScanState.Success(product.id),
+                                lastBarcode = product.barcode ?: product.id,
+                                alternatives = emptyList()
+                            )
+                        }
+                    } else {
+                        deliverLookupState(lookupToken) {
+                            it.copy(
+                                scanState = ScanState.NotFound,
+                                lastBarcode = barcode,
+                                alternatives = emptyList()
+                            )
+                        }
+                    }
+                }
 
-        _uiState.value = _uiState.value.copy(
-            scanState = ScanState.Loading,
-            barcodeInput = barcode
-        )
+                BrandedLoadingOutcome.Timeout -> {
+                    val error = uiText(R.string.scanner_error_lookup_failed)
+                    deliverLookupState(lookupToken) {
+                        it.copy(
+                            scanState = ScanState.Error(error),
+                            errorMessage = error
+                        )
+                    }
+                }
 
-        val product = debugProductRepository.searchByBarcode(barcode)
-        if (product != null) {
-            persistProduct(product.copy(source = "debug"))
-            _uiState.value = _uiState.value.copy(
-                scanState = ScanState.Success(product.id),
-                lastBarcode = product.barcode ?: product.id,
-                alternatives = emptyList()
-            )
-        } else {
-            _uiState.value = _uiState.value.copy(
-                scanState = ScanState.NotFound,
-                lastBarcode = barcode,
-                alternatives = emptyList()
-            )
+                is BrandedLoadingOutcome.Error -> {
+                    val error = gatedLookup.throwable.message
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let(UiText::DynamicString)
+                        ?: uiText(R.string.scanner_error_lookup_failed)
+                    deliverLookupState(lookupToken) {
+                        it.copy(
+                            scanState = ScanState.Error(error),
+                            errorMessage = error
+                        )
+                    }
+                }
+            }
+        } finally {
+            clearLookupJobIfActive(lookupToken)
+        }
+    }
+
+    private fun launchLookup(block: suspend (Long) -> Unit) {
+        val lookupToken = beginLookup()
+        activeLookupJob = viewModelScope.launch {
+            block(lookupToken)
+        }
+    }
+
+    private fun beginLookup(): Long {
+        activeLookupJob?.cancel()
+        activeLookupToken += 1
+        debugLog("Starting lookup token=$activeLookupToken")
+        return activeLookupToken
+    }
+
+    private fun invalidateActiveLookup() {
+        if (activeLookupJob == null && _uiState.value.scanState != ScanState.Loading) return
+
+        activeLookupToken += 1
+        debugLog("Invalidating active lookup token=$activeLookupToken")
+        activeLookupJob?.cancel()
+        activeLookupJob = null
+    }
+
+    private fun isLookupActive(lookupToken: Long): Boolean {
+        return lookupToken == activeLookupToken
+    }
+
+    private fun deliverLookupState(
+        lookupToken: Long,
+        transform: (CameraUiState) -> CameraUiState
+    ): CameraUiState? {
+        if (!isLookupActive(lookupToken)) {
+            debugLog("Dropping stale lookup state for token=$lookupToken")
+            return null
+        }
+        val updatedState = transform(_uiState.value)
+        if (!isLookupActive(lookupToken)) {
+            debugLog("Dropping stale lookup state after transform for token=$lookupToken")
+            return null
+        }
+        _uiState.value = updatedState
+        return updatedState
+    }
+
+    private fun clearLookupJobIfActive(lookupToken: Long) {
+        if (isLookupActive(lookupToken)) {
+            activeLookupJob = null
+        }
+    }
+
+    private fun debugLog(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, message)
         }
     }
 
@@ -369,7 +548,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
-    private fun message(resId: Int): String {
-        return getApplication<Application>().getString(resId)
+    override fun onCleared() {
+        activeLookupJob?.cancel()
+        scannerRuntime.release()
+        super.onCleared()
+    }
+
+    companion object {
+        private const val TAG = "CameraViewModel"
     }
 }

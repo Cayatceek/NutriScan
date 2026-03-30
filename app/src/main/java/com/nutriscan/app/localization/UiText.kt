@@ -3,12 +3,56 @@ package com.nutriscan.app.localization
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nutriscan.app.R
 import com.nutriscan.app.domain.analyzer.Allergen
 import com.nutriscan.app.model.IngredientType
 import com.nutriscan.app.model.NutriScore
 import com.nutriscan.app.model.SafetyStatus
+
+sealed interface UiText {
+    data class StringResource(
+        @StringRes val resId: Int,
+        val formatArgs: List<Any> = emptyList()
+    ) : UiText
+
+    data class DynamicString(
+        val value: String
+    ) : UiText
+}
+
+val LocalLocalizedAppContext = staticCompositionLocalOf<Context?> { null }
+
+fun uiText(@StringRes resId: Int, vararg args: Any): UiText {
+    return UiText.StringResource(resId = resId, formatArgs = args.toList())
+}
+
+fun UiText.resolve(context: Context): String {
+    return when (this) {
+        is UiText.DynamicString -> value
+        is UiText.StringResource -> {
+            if (formatArgs.isEmpty()) {
+                context.getString(resId)
+            } else {
+                context.getString(resId, *formatArgs.toTypedArray())
+            }
+        }
+    }
+}
+
+@Composable
+fun UiText.asString(): String {
+    LocalConfiguration.current
+    return resolve(LocalLocalizedAppContext.current ?: LocalContext.current)
+}
+
+@Composable
+fun UiText?.asStringOrNull(): String? {
+    return this?.asString()
+}
 
 @StringRes
 private fun languageLabelRes(code: String): Int {
@@ -153,6 +197,17 @@ fun Context.localizedAnalysisItem(raw: String): String {
         "gluten" -> getString(R.string.analysis_item_gluten)
         "high sugar" -> getString(R.string.analysis_item_high_sugar)
         "gelatin" -> getString(R.string.analysis_item_gelatin)
+        "egg", "eggs" -> getString(R.string.allergen_eggs)
+        "peanut", "peanuts" -> getString(R.string.allergen_peanuts)
+        "tree nuts" -> getString(R.string.allergen_tree_nuts)
+        "soy", "soya" -> getString(R.string.allergen_soy)
+        "fish" -> getString(R.string.allergen_fish)
+        "shellfish" -> getString(R.string.allergen_shellfish)
+        "sesame" -> getString(R.string.allergen_sesame)
+        "sulfites" -> getString(R.string.allergen_sulfites)
+        "e102" -> "E102"
+        "e621", "msg" -> "E621"
+        "not halal" -> getString(R.string.result_warnings_dietary)
         else -> raw
     }
 }

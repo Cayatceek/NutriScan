@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -34,15 +36,14 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -51,25 +52,24 @@ import com.nutriscan.app.domain.analyzer.Allergen
 import com.nutriscan.app.localization.localizedAllergenLabel
 import com.nutriscan.app.localization.localizedLanguageLabel
 import com.nutriscan.app.localization.localizedThemeLabel
+import com.nutriscan.app.localization.asStringOrNull
 import com.nutriscan.app.ui.components.BottomNavigationBar
+import com.nutriscan.app.ui.components.InlineErrorCard
 import com.nutriscan.app.ui.components.SectionTitle
 import com.nutriscan.app.ui.theme.NutriScanTheme
 import com.nutriscan.app.ui.theme.card_stroke
 import com.nutriscan.app.ui.theme.muted_text
 import com.nutriscan.app.viewmodel.SettingsUiState
 import com.nutriscan.app.viewmodel.SettingsViewModel
-import com.nutriscan.app.viewmodel.SettingsViewModelFactory
 
 @Composable
 fun SettingsScreen(
     navController: NavController,
+    viewModel: SettingsViewModel,
+    showBottomBar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val viewModel: SettingsViewModel = viewModel(
-        factory = SettingsViewModelFactory(context.applicationContext as android.app.Application)
-    )
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.showClearHistoryDialog) {
         AlertDialog(
@@ -93,7 +93,9 @@ fun SettingsScreen(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            BottomNavigationBar(navController = navController)
+            if (showBottomBar) {
+                BottomNavigationBar(navController = navController)
+            }
         }
     ) { paddingValues ->
         SettingsContent(
@@ -105,6 +107,7 @@ fun SettingsScreen(
             onSetHealthyMode = viewModel::setHealthyMode,
             onSetVeganMode = viewModel::setVeganMode,
             onClearHistory = viewModel::showClearHistoryDialog,
+            onRetryLoad = viewModel::retryLoad,
             appVersion = viewModel.getAppVersion(),
             modifier = Modifier.padding(paddingValues)
         )
@@ -122,6 +125,7 @@ private fun SettingsContent(
     onSetHealthyMode: (Boolean) -> Unit,
     onSetVeganMode: (Boolean) -> Unit,
     onClearHistory: () -> Unit,
+    onRetryLoad: () -> Unit,
     appVersion: String,
     modifier: Modifier = Modifier
 ) {
@@ -135,6 +139,17 @@ private fun SettingsContent(
                 title = stringResource(R.string.settings_title),
                 subtitle = stringResource(R.string.settings_subtitle)
             )
+        }
+
+        if (uiState.errorMessage != null) {
+            item {
+                InlineErrorCard(
+                    title = stringResource(R.string.settings_title),
+                    message = uiState.errorMessage.asStringOrNull() ?: stringResource(R.string.error_generic),
+                    actionLabel = stringResource(R.string.retry),
+                    onAction = onRetryLoad
+                )
+            }
         }
 
         item {
@@ -290,7 +305,7 @@ private fun SettingsContent(
             SettingsCard {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "NutriScan",
+                        text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -348,17 +363,26 @@ private fun SettingsToggleRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = muted_text)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(0.78f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Column {
+                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = muted_text)
+            }
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
@@ -422,6 +446,23 @@ private fun FaqItem(
 @Composable
 private fun SettingsScreenPreview() {
     NutriScanTheme {
-        SettingsScreen(navController = rememberNavController())
+        SettingsContent(
+            uiState = SettingsUiState(
+                selectedLanguage = "ru",
+                selectedTheme = "system",
+                selectedAllergens = setOf(Allergen.GLUTEN, Allergen.MILK),
+                halalModeEnabled = true,
+                historyCount = 12
+            ),
+            onSetTheme = {},
+            onSetLanguage = {},
+            onToggleAllergen = {},
+            onSetHalalMode = {},
+            onSetHealthyMode = {},
+            onSetVeganMode = {},
+            onClearHistory = {},
+            onRetryLoad = {},
+            appVersion = "1.0.0"
+        )
     }
 }

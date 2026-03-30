@@ -114,6 +114,7 @@
     <string name="result_title">Сводка по безопасности</string>
     <string name="result_loading_title">Готовим анализ</string>
     <string name="result_loading_message">Собираем короткую и понятную сводку по безопасности для этого продукта.</string>
+    <string name="loading_brand_slogan">Помогаем выбирать осознанно</string>
     <string name="result_error_title">Результат недоступен</string>
     <string name="result_error_default">Сейчас не удалось загрузить этот продукт.</string>
     <string name="result_error_product_not_found">Продукт не найден</string>

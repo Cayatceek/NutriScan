@@ -1,0 +1,51 @@
+<resources>
+    <string name="nav_help">Help</string>
+
+    <string name="onboarding_slide_1_title">Understand ingredients in seconds</string>
+    <string name="onboarding_slide_1_body">NutriScan quickly highlights ingredients, allergens, and the main risk signals.</string>
+    <string name="onboarding_slide_2_title">Scan. Analyze. Choose consciously.</string>
+    <string name="onboarding_slide_2_body">Point your camera at a barcode and let the app simplify the product decision.</string>
+    <string name="onboarding_slide_3_title">Choose safer and easier</string>
+    <string name="onboarding_slide_3_body">Get clear guidance for allergens, additives, and dietary modes before you buy.</string>
+    <string name="onboarding_button_next">Next</string>
+    <string name="onboarding_button_continue">Continue</string>
+
+    <string name="auth_choice_title">Continue with NutriScan</string>
+    <string name="auth_choice_subtitle">Sign in to sync history and favorites, or start scanning right away.</string>
+    <string name="auth_choice_login">Log in</string>
+    <string name="auth_choice_register">Register</string>
+    <string name="auth_choice_later">Later</string>
+
+    <string name="login_title">Log in to your account</string>
+    <string name="login_subtitle">Keep your history, favorites, and settings in sync across devices.</string>
+    <string name="login_action">Log in</string>
+    <string name="login_loading">Signing in</string>
+
+    <string name="register_title">Create an account</string>
+    <string name="register_subtitle">Register to save and sync your NutriScan experience.</string>
+    <string name="register_action">Create account</string>
+    <string name="register_loading">Creating account</string>
+
+    <string name="help_title">Help and care</string>
+    <string name="help_subtitle">Quick practical guidance and simple ingredient education in one place.</string>
+    <string name="help_first_aid_title">First aid</string>
+    <string name="help_first_aid_subtitle">See what to watch for during an allergic reaction and when urgent help matters.</string>
+    <string name="help_additives_title">Additives encyclopedia</string>
+    <string name="help_additives_subtitle">Read simple explanations for common E-numbers and food additives.</string>
+
+    <string name="additives_title">Additives encyclopedia</string>
+    <string name="additives_subtitle">This is an educational section with simple explanations of common additives.</string>
+    <string name="additives_item_1_title">Curcumin</string>
+    <string name="additives_item_1_body">A coloring additive. It is commonly used to give foods a yellow tone and is often linked to spices.</string>
+    <string name="additives_item_2_title">Potassium sorbate</string>
+    <string name="additives_item_2_body">A preservative that helps products last longer. It often appears in drinks and sauces.</string>
+    <string name="additives_item_3_title">Monosodium glutamate</string>
+    <string name="additives_item_3_body">A flavor enhancer that is common in prepared foods and snacks.</string>
+    <string name="additives_item_4_title">Acesulfame K</string>
+    <string name="additives_item_4_body">A low-calorie sweetener that may appear in sweet drinks and fitness products.</string>
+
+    <string name="scanner_help_title">How to scan</string>
+    <string name="scanner_help_tip_scan">Hold the phone steady and place the barcode inside the frame. Good lighting helps detection happen faster.</string>
+    <string name="scanner_help_tip_not_found">If the product is not found, enter the barcode manually or use product search.</string>
+    <string name="got_it">Got it</string>
+</resources>

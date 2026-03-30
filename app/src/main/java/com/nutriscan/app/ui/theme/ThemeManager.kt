@@ -40,8 +40,8 @@ object ThemeManager {
 
 object LanguageManager {
 
-    fun applyLanguage(context: Context, language: String) {
-        LocaleManager.applyLanguage(context, language)
+    fun localizedContext(context: Context, language: String): Context {
+        return LocaleManager.createLocalizedContext(context, language)
     }
 
     fun getCurrentLanguage(context: Context): String {

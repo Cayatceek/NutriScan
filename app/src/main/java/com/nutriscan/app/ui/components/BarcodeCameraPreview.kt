@@ -1,162 +1,96 @@
 package com.nutriscan.app.ui.components
 
-import android.annotation.SuppressLint
 import android.content.Context
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ExperimentalGetImage
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
+import android.util.Log
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.nutriscan.app.BuildConfig
 
 @Composable
 fun BarcodeCameraPreview(
+    runtime: ScannerRuntime,
     modifier: Modifier = Modifier,
-    enabled: Boolean,
+    cameraActive: Boolean,
+    scanningEnabled: Boolean,
     onBarcodeDetected: (String) -> Unit,
     onScannerError: (Throwable) -> Unit
 ) {
-    val context = LocalContext.current
+    val viewContext = LocalView.current.context
     val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val previewView = remember(context) {
-        PreviewView(context).apply {
-            scaleType = PreviewView.ScaleType.FILL_CENTER
-        }
+    val previewView = remember(viewContext) { createPreviewView(viewContext) }
+    val currentOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
+    val currentOnScannerError by rememberUpdatedState(onScannerError)
+
+    LaunchedEffect(runtime, currentOnBarcodeDetected, currentOnScannerError) {
+        runtime.updateCallbacks(
+            onBarcodeDetected = currentOnBarcodeDetected,
+            onScannerError = currentOnScannerError
+        )
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            cameraExecutor.shutdown()
-        }
+    LaunchedEffect(runtime, cameraActive, scanningEnabled) {
+        runtime.setScanningEnabled(cameraActive && scanningEnabled)
     }
 
-    LaunchedEffect(enabled, lifecycleOwner) {
-        if (enabled) {
-            bindCameraUseCases(
-                context = context,
-                previewView = previewView,
-                cameraExecutor = cameraExecutor,
+    LaunchedEffect(runtime, cameraActive, lifecycleOwner, previewView) {
+        if (cameraActive) {
+            runtime.attach(
                 lifecycleOwner = lifecycleOwner,
-                onBarcodeDetected = onBarcodeDetected,
-                onScannerError = onScannerError
+                surfaceProvider = previewView.surfaceProvider
             )
         } else {
-            ProcessCameraProvider.getInstance(context).get().unbindAll()
+            runtime.detach(lifecycleOwner)
+        }
+    }
+
+    DisposableEffect(runtime, previewView, lifecycleOwner) {
+        val observer = Observer<PreviewView.StreamState> { state ->
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "Preview stream state: $state")
+            }
+            if (state == PreviewView.StreamState.STREAMING) {
+                runtime.onPreviewStreaming()
+            }
+        }
+        previewView.previewStreamState.observe(lifecycleOwner, observer)
+
+        onDispose {
+            previewView.previewStreamState.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(runtime, lifecycleOwner, previewView) {
+        onDispose {
+            runtime.detach(lifecycleOwner)
         }
     }
 
     AndroidView(
         modifier = modifier,
-        factory = { previewView }
+        factory = { previewView },
+        update = { }
     )
 }
 
-@SuppressLint("UnsafeOptInUsageError")
-private fun bindCameraUseCases(
-    context: Context,
-    previewView: PreviewView,
-    cameraExecutor: ExecutorService,
-    lifecycleOwner: androidx.lifecycle.LifecycleOwner,
-    onBarcodeDetected: (String) -> Unit,
-    onScannerError: (Throwable) -> Unit
-) {
-    val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-    cameraProviderFuture.addListener({
-        try {
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder()
-                .build()
-                .also { it.surfaceProvider = previewView.surfaceProvider }
-
-            val analyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also { analysis ->
-                    analysis.setAnalyzer(
-                        cameraExecutor,
-                        RetailBarcodeAnalyzer(
-                            onBarcodeDetected = onBarcodeDetected,
-                            onScannerError = onScannerError
-                        )
-                    )
-                }
-
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                preview,
-                analyzer
-            )
-        } catch (throwable: Throwable) {
-            onScannerError(throwable)
-        }
-    }, ContextCompat.getMainExecutor(context))
-}
-
-private class RetailBarcodeAnalyzer(
-    private val onBarcodeDetected: (String) -> Unit,
-    private val onScannerError: (Throwable) -> Unit
-) : ImageAnalysis.Analyzer {
-
-    private val scanner = BarcodeScanning.getClient(
-        BarcodeScannerOptions.Builder()
-            .setBarcodeFormats(
-                Barcode.FORMAT_EAN_13,
-                Barcode.FORMAT_EAN_8,
-                Barcode.FORMAT_UPC_A,
-                Barcode.FORMAT_UPC_E,
-                Barcode.FORMAT_CODE_128,
-                Barcode.FORMAT_CODE_39,
-                Barcode.FORMAT_CODE_93,
-                Barcode.FORMAT_ITF
-            )
-            .build()
-    )
-
-    @OptIn(ExperimentalGetImage::class)
-    override fun analyze(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
-            return
-        }
-
-        val inputImage = InputImage.fromMediaImage(
-            mediaImage,
-            imageProxy.imageInfo.rotationDegrees
-        )
-
-        scanner.process(inputImage)
-            .addOnSuccessListener { barcodes ->
-                val barcode = barcodes
-                    .firstOrNull { candidate -> !candidate.rawValue.isNullOrBlank() }
-                    ?.rawValue
-                    ?.trim()
-                if (!barcode.isNullOrBlank()) {
-                    onBarcodeDetected(barcode)
-                }
-            }
-            .addOnFailureListener(onScannerError)
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
+private fun createPreviewView(context: Context): PreviewView {
+    if (BuildConfig.DEBUG) {
+        Log.d(TAG, "PreviewView created")
+    }
+    return PreviewView(context).apply {
+        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+        scaleType = PreviewView.ScaleType.FILL_CENTER
+        keepScreenOn = true
     }
 }
+
+private const val TAG = "BarcodeCameraPreview"
